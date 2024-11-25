@@ -20,7 +20,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state);
 static struct argp_option options[] = {
     {0, 0, 0, 0, "Options:", 1},
     {"nav-file", 'e', "filename", 0, "RINEX navigation file for GPS ephemeris (required)", 1},
-    {"use-ftp", 'f', 0, 0, "Pull actual RINEX navigation file and almanac from online source", 1},
+    {"online-fetch", 'f', 0, 0, "Pull actual RINEX navigation file and almanac from online source", 1},
     {"geo-loc", 'l', "location", 0, "Latitude, Longitude, Height (static mode) e.g. 35.681298,139.766247,10.0", 1},
     {"start", 's', "date,time", 0, "Scenario start time YYYY/MM/DD,hh:mm:ss (use 'now' for actual time)", 1},
     {"disable-iono", 'I', 0, 0, "Disable ionospheric delay for spacecraft scenario", 1},
@@ -38,17 +38,17 @@ static struct argp_option options[] = {
     {"network", 'N', "network", 0, "ADLAM-Pluto network IP or hostname (default pluto.local)", 1},
     {"motion", 'm', "name", 0, "User motion file (dynamic mode)", 1},
     {"disable-almanac", 702, 0, 0, "Disable transmission of almanac information", 1},
-    {"station", 701, "id", 0, "Use station with given ID for RINEX FTP download (4 or 9 character ID)", 2},
+    {"station", 701, "id", 0, "Use station with given ID for RINEX download (4 or 9 character ID)", 2},
     {0, 0, 0, OPTION_DOC, "Station is a GPS ground station around the world which provides RINEX hourly updated data. See gps.c for station details. A random station is picked if no ID is given", 2},
     {0, 0, 0, 0, "SDR device types (use with --radio or -r option):", 3},
     {0, 0, 0, OPTION_DOC, "   none", 3},
     {0, 0, 0, OPTION_DOC, "   iqfile", 3},
-#ifdef ENABLE_HACKRFSDR    
+#ifdef ENABLE_HACKRFSDR
     {0, 0, 0, OPTION_DOC, "   hackrf", 3},
 #endif
 #ifdef ENABLE_PLUTOSDR
     {0, 0, 0, OPTION_DOC, "   plutosdr", 3},
-#endif    
+#endif
     { 0}
 };
 

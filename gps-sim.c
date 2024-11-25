@@ -74,7 +74,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
             simulator.station_id = strndup(arg, 9);
             break;
         case 'f':
-            simulator.use_ftp = true;
+            simulator.online_fetch = true;
             break;
         case 'l':
             if (arg == NULL) {
@@ -182,7 +182,7 @@ static void simulator_init(void) {
     simulator.ionosphere_enable = true;
     simulator.gps_thread_running = false;
     simulator.interactive_mode = false;
-    simulator.use_ftp = false;
+    simulator.online_fetch = false;
     simulator.enable_tx_amp = false;
     simulator.use_rinex3 = false;
     simulator.time_overwrite = false;
@@ -291,7 +291,7 @@ int main(int argc, char** argv) {
         return (EXIT_FAILURE);
     }
 
-    if (simulator.nav_file_name == NULL && simulator.use_ftp == false) {
+    if (simulator.nav_file_name == NULL && simulator.online_fetch == false) {
         fprintf(stderr, "Error: GPS ephemeris file is not specified\n");
         return (EXIT_FAILURE);
     }
