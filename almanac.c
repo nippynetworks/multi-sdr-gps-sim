@@ -90,6 +90,8 @@ CURLcode almanac_read_file(void) {
 
     pbuf = fgets(buf, sizeof (buf), fp);
     if (pbuf == NULL || sscanf(buf, "%u %u", &week, &sec) != 2) goto error;
+    // GPS week rollover
+    week += 2048;
 
     n -= 1; // PRN in file counts 1-32, array counts 0-31
     if (n > 31) n = 31; // Max 32 PRN's to read (0-31)
@@ -147,18 +149,9 @@ CURLcode almanac_read_file(void) {
         if (sscanf(buf, "%hhu", &a->config_code) != 1) goto error;
         if (a->config_code > 15) a->config_code = 15;
 
-        /**
-         * ublox u-center software provides the full GPS week number whereas Celestrak follows
-         * IC-GPS-200L, p. 116, 20.3.3.5.1.5 Almanac Reference Week:
-         * The WNa term consists of eight bits which shall be a modulo 256 binary
-         * representation of the GPS week number...
-         * Celestrak almanac files use a modulo 256 week number in file name.
-         * See https://celestrak.com/GPS/almanac/SEM/2021/
-         */
-        a->toa.week = (int) week % 256;
+        a->toa.week = (int) week;
         a->toa.sec = (double) sec;
-        // GPS week rollover
-        a->toa.week += 2048;
+
         a->valid = 1;
         almanac_gps.valid = 1; // We have at least one valid record
     }
@@ -183,7 +176,7 @@ error:
 /**
  * Read almanac from online source.
  * sem format expected.
- *  
+ *
  */
 CURLcode almanac_download(void) {
     CURL *curl;
