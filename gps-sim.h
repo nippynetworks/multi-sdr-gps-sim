@@ -60,7 +60,7 @@ typedef struct {
     bool show_verbose;
     bool ionosphere_enable;
     bool interactive_mode;
-    bool use_ftp;
+    bool online_fetch;
     bool enable_tx_amp;
     bool use_rinex3;
     bool time_overwrite;

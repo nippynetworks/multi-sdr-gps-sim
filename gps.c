@@ -37,107 +37,83 @@
  * Station name
  * Including Ionosphere data in Rinex file
  */
-const stations_t stations_v3[] = {
-    {"func", "FUNC00PRT", "Funchal"},
-    {"flrs", "FLRS00PRT", "Santa Cruz das Flore"},
-    {"pdel", "PDEL00PRT", "PONTA DELGADA"},
-    {NULL, NULL, NULL} // Always last entry
-};
-
-/**
- * Stations providing Rinex v2 format.
- * 4-characters station ID
- * 9-characters station ID
- * Station name
- */
-const stations_t stations_v2[] = {
-    {"abmf", "ABMF00GLP", "Aeroport du Raizet"},
-    {"aggo", "AGGO00ARG", "AGGO"},
-    {"ajac", "AJAC00FRA", "Ajaccio"},
-    {"ankr", "ANKR00TUR", "Ankara"},
+const stations_t stations[] = {
+    // {"abmf", "ABMF00GLP", "Aeroport du Raizet"},
+    // {"aggo", "AGGO00ARG", "AGGO"},
+    // {"ajac", "AJAC00FRA", "Ajaccio"},
     {"areg", "AREG00PER", "Arequipa"},
     {"ascg", "ASCG00SHN", "Ascension"},
     {"bogi", "BOGI00POL", "Borowa Gora"},
     {"bor1", "BOR100POL", "Borowiec"},
-    {"brst", "BRST00FRA", "Brest"},
+    // {"brst", "BRST00FRA", "Brest"},
     {"chpg", "CHPG00BRA", "Cachoeira Paulista"},
     {"cibg", "CIBG00IDN", "Cibinong"},
     {"cpvg", "CPVG00CPV", "CAP-VERT"},
     {"djig", "DJIG00DJI", "Djibouti"},
-    {"dlf1", "DLF100NLD", "Delft"},
-    {"ffmj", "FFMJ00DEU", "Frankfurt/Main"},
+    // {"dlf1", "DLF100NLD", "Delft"},
+    // {"ffmj", "FFMJ00DEU", "Frankfurt/Main"},
+    {"flrs", "FLRS00PRT", "Santa Cruz das Flore"},
     {"ftna", "FTNA00WLF", "Futuna"},
+    {"func", "FUNC00PRT", "Funchal"},
     {"gamb", "GAMB00PYF", "Rikitea"},
     {"gamg", "GAMG00KOR", "Geochang"},
-    {"glps", "GLPS00ECU", "Galapagos Permanent Station"},
-    {"glsv", "GLSV00UKR", "Kiev/Golosiiv"},
-    {"gmsd", "GMSD00JPN", "GUTS Masda"},
+    // {"glsv", "GLSV00UKR", "Kiev/Golosiiv"},
     {"gop6", "GOP600CZE", "Pecny, Ondrejov"},
     {"gop7", "GOP700CZE", "Pecny, Ondrejov"},
     {"gope", "GOPE00CZE", "Pecny, Ondrejov"},
-    {"grac", "GRAC00FRA", "Grasse"},
+    // {"grac", "GRAC00FRA", "Grasse"},
     {"gras", "GRAS00FRA", "Observatoire de Calern - OCA"},
-    {"holb", "HOLB00CAN", "Holberg"},
-    {"hueg", "HUEG00DEU", "Huegelheim"},
     {"ieng", "IENG00ITA", "Torino"},
-    {"ista", "ISTA00TUR", "Istanbul"},
-    {"izmi", "IZMI00TUR", "Izmir"},
-    {"jfng", "JFNG00CHN", "Juifeng"},
-    {"joz2", "JOZ200POL", "Jozefoslaw"},
-    {"joze", "JOZE00POL", "Jozefoslaw"},
+    // {"ista", "ISTA00TUR", "Istanbul"},
+    // {"izmi", "IZMI00TUR", "Izmir"},
+    // {"joz2", "JOZ200POL", "Jozefoslaw"},
     {"kerg", "KERG00ATF", "Kerguelen Islands"},
     {"kitg", "KITG00UZB", "Kitab"},
     {"koug", "KOUG00GUF", "Kourou"},
     {"krgg", "KRGG00ATF", "Kerguelen Islands"},
-    {"krs1", "KRS100TUR", "Kars"},
+    // {"krs1", "KRS100TUR", "Kars"},
     {"lama", "LAMA00POL", "Lamkowo"},
-    {"leij", "LEIJ00DEU", "Leipzig"},
-    {"lmmf", "LMMF00MTQ", "Aeroport Aime CESAIRE-LE LAMENTIN"},
+    // {"leij", "LEIJ00DEU", "Leipzig"},
+    // {"lmmf", "LMMF00MTQ", "Aeroport Aime CESAIRE-LE LAMENTIN"},
     {"lroc", "LROC00FRA", "La Rochelle"},
-    {"mad2", "MAD200ESP", "Madrid Deep Space Tracking Station"},
-    {"madr", "MADR00ESP", "Madrid Deep Space Tracking Station"},
     {"mayg", "MAYG00MYT", "Dzaoudzi"},
     {"mers", "MERS00TUR", "Mersin"},
-    {"mikl", "MIKL00UKR", "Mykolaiv"},
-    {"morp", "MORP00GBR", "Morpeth"},
+    // {"mikl", "MIKL00UKR", "Mykolaiv"},
     {"nklg", "NKLG00GAB", "N'KOLTANG"},
     {"nyal", "NYAL00NOR", "Ny-Alesund"},
     {"nya1", "NYA100NOR", "Ny-Alesund"},
-    {"ohi2", "OHI200ATA", "O'Higgins"},
-    {"orid", "ORID00MKD", "Ohrid"},
-    {"owmg", "OWMG00NZL", "Chatham Island"},
-    {"polv", "POLV00UKR", "Poltava"},
-    {"ptbb", "PTBB00DEU", "Braunschweig"},
+    // {"orid", "ORID00MKD", "Ohrid"},
+    {"pdel", "PDEL00PRT", "PONTA DELGADA"},
+    // {"polv", "POLV00UKR", "Poltava"},
+    // {"ptbb", "PTBB00DEU", "Braunschweig"},
     {"ptgg", "PTGG00PHL", "Manilla"},
-    {"rabt", "RABT00MAR", "Rabat, EMI"},
-    {"reun", "REUN00REU", "La Reunion - Observatoire Volcanologique"},
+    // {"rabt", "RABT00MAR", "Rabat, EMI"},
+    // {"reun", "REUN00REU", "La Reunion - Observatoire Volcanologique"},
     {"rgdg", "RGDG00ARG", "Rio Grande"},
     {"riga", "RIGA00LVA", "RIGA permanent GPS"},
     {"seyg", "SEYG00SYC", "Mahe"},
-    {"sofi", "SOFI00BGR", "Sofia"},
+    // {"sofi", "SOFI00BGR", "Sofia"},
     {"stj3", "STJ300CAN", "STJ3 CACS-GSD"},
-    {"sulp", "SULP00UKR", "Lviv Polytechnic"},
+    // {"sulp", "SULP00UKR", "Lviv Polytechnic"},
     {"svtl", "SVTL00RUS", "Svetloe"},
-    {"tana", "TANA00ETH", "ILA, Bahir Dar University"},
     {"thtg", "THTG00PYF", "Papeete Tahiti"},
     {"thti", "THTI00PYF", "Tahiti"},
-    {"tit2", "TIT200DEU", "Titz / Jackerath"},
+    // {"tit2", "TIT200DEU", "Titz / Jackerath"},
     {"tlse", "TLSE00FRA", "Toulouse"},
     {"tro1", "TRO100NOR", "Tromsoe"},
-    {"warn", "WARN00DEU", "Warnemuende"},
-    {"whit", "WHIT00CAN", "WHIT CACS-GSD"},
+    // {"warn", "WARN00DEU", "Warnemuende"},
     {"wroc", "WROC00POL", "Wroclaw"},
     {"wtza", "WTZA00DEU", "Wettzell"},
     {"yel2", "YEL200CAN", "Yellow Knife"},
     {"zeck", "ZECK00RUS", "Zelenchukskaya"},
-    {"zim2", "ZIM200CHE", "Zimmerwald"},
-    {"zimm", "ZIMM00CHE", "Zimmerwald L+T 88"},
+    // {"zim2", "ZIM200CHE", "Zimmerwald"},
+    // {"zimm", "ZIMM00CHE", "Zimmerwald L+T 88"},
     {NULL, NULL, NULL} // Always last entry
 };
 
 static char rinex_date[21];
 
-struct ftp_file {
+struct http_file {
     const char *filename;
     FILE *stream;
 };
@@ -2235,7 +2211,7 @@ static int allocateChannel(channel_t *chan, almanac_gps_t *alm, ephem_t *eph, io
 }
 
 static size_t fwrite_rinex(void *buffer, size_t size, size_t nmemb, void *stream) {
-    struct ftp_file *out = (struct ftp_file *) stream;
+    struct http_file *out = (struct http_file *) stream;
     if (out && !out->stream) {
         /* open file for writing */
         out->stream = fopen(out->filename, "wb");
@@ -2277,7 +2253,7 @@ static int readUserMotion(double xyz[USER_MOTION_SIZE][3], const char *filename)
 }
 
 /*
- * 
+ *
  */
 void *gps_thread_ep(void *arg) {
     simulator_t *simulator = (simulator_t *) (arg);
@@ -2309,7 +2285,7 @@ void *gps_thread_ep(void *arg) {
     bool sat_simulated[33] = {false};
 
     int start_y = 4; // Row to start output in LS_FIX window/panel
-    int ibs; // boresight angle index    
+    int ibs; // boresight angle index
     int igrx;
     int sv;
     int neph, ieph;
@@ -2366,8 +2342,8 @@ void *gps_thread_ep(void *arg) {
 
     CURL *curl;
     CURLcode curl_code = CURLE_GOT_NOTHING;
-    struct ftp_file ftp = {
-        RINEX2_FILE_NAME,
+    struct http_file http = {
+        RINEX_FILE_NAME,
         NULL
     };
 
@@ -2377,24 +2353,24 @@ void *gps_thread_ep(void *arg) {
     thread_to_core(2);
     set_thread_name("gps-thread");
 
-    if ((simulator->nav_file_name == NULL) && (simulator->use_ftp == false)) {
-        gui_status_wprintw(RED, "GPS ephemeris file is not specified.\n");
-        goto end_gps_thread;
+    if (simulator->nav_file_name == NULL) {
+        if (simulator->online_fetch == false) {
+            gui_status_wprintw(RED, "GPS ephemeris file is not specified.\n");
+            goto end_gps_thread;
+        } else {
+            simulator->nav_file_name = strdup(RINEX_FILE_NAME);
+        }
     }
 
     ////////////////////////////////////////////////////////////
     // Read ephemeris
     ////////////////////////////////////////////////////////////
-    if (simulator->use_ftp) {
+    if (simulator->online_fetch) {
         time_t t = time(NULL);
         struct tm *tm = gmtime(&t);
         char* url = malloc(NAME_MAX);
         int station_index = 0;
-        // Use RINEX v2 by default or v3 on request
-        const stations_t *pstation = stations_v2;
-        if (simulator->use_rinex3) {
-            pstation = stations_v3;
-        }
+        const stations_t *pstation = stations;
 
         // Get number of stations available, find index for given one
         for (int s = 0; pstation[s].id_v2 != NULL; s++) {
@@ -2409,7 +2385,7 @@ void *gps_thread_ep(void *arg) {
 
         // Pick a random station if none given
         if (simulator->station_id == NULL) {
-            srand((unsigned int) g0.sec);
+            srand((unsigned int) g0.sec + (g0.week * 1000000));
             station_index = rand() % station_index;
         }
         // Check that we have a picked a valid station
@@ -2418,7 +2394,6 @@ void *gps_thread_ep(void *arg) {
             station_index = 0;
         }
 
-        gui_status_wprintw(GREEN, "Pulling RINEX v%u from station: %s\n", (simulator->use_rinex3) ? 3 : 2, pstation[station_index].name);
 
         // We fetch data from previous hour because the actual hour is still in progress
         tm->tm_hour -= 1;
@@ -2426,29 +2401,30 @@ void *gps_thread_ep(void *arg) {
             tm->tm_hour = 23;
         }
 
-        // Compose FTP URL
-        snprintf(url, NAME_MAX, RINEX_FTP_URL RINEX_FTP_FILE, (simulator->use_rinex3) ? RINEX3_SUBFOLDER : RINEX2_SUBFOLDER,
-                tm->tm_yday + 1, tm->tm_hour, pstation[station_index].id_v2, tm->tm_yday + 1, 'a' + tm->tm_hour, tm->tm_year - 100);
+        // Compose HTTPS URL
+        snprintf(url, NAME_MAX, RINEX_HTTPS_URL RINEX_HTTPS_FILE,
+                tm->tm_yday + 1, tm->tm_hour, pstation[station_index].id_v3, tm->tm_year - 100 + 2000, tm->tm_yday + 1, tm->tm_hour * 100);
+        gui_status_wprintw(GREEN, "Pulling RINEX from station: %s - %s\n", pstation[station_index].name, url);
 
         curl_global_init(CURL_GLOBAL_DEFAULT);
         curl = curl_easy_init();
         if (curl) {
             curl_easy_setopt(curl, CURLOPT_URL, url);
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, fwrite_rinex);
-            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &ftp);
-            curl_easy_setopt(curl, CURLOPT_USE_SSL, CURLUSESSL_NONE);
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &http);
+            // Instruct libcurl to use the native CA store
+            curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
             if (0 /*simulator->show_verbose*/) {
                 curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
             } else {
                 curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
             }
-            curl_easy_setopt(curl, CURLOPT_USERPWD, "anonymous:anonymous");
             curl_code = curl_easy_perform(curl);
             curl_easy_cleanup(curl);
         }
 
-        if (ftp.stream)
-            fclose(ftp.stream);
+        if (http.stream)
+            fclose(http.stream);
 
         free(url);
         curl_global_cleanup();
@@ -2613,7 +2589,7 @@ void *gps_thread_ep(void *arg) {
 
     almanac_gps_t *alm = almanac_init();
     if (simulator->almanac_enable) {
-        if (simulator->use_ftp) {
+        if (simulator->online_fetch) {
             curl_code = almanac_download();
         } else {
             curl_code = almanac_read_file();

@@ -19,12 +19,10 @@
 /* Real-time signal generation */
 #define REAL_TIME_GPS
 
-#define RINEX2_FILE_NAME "rinex2.gz"
-#define RINEX3_FILE_NAME "rinex3.gz"
-#define RINEX_FTP_URL "ftp://igs.bkg.bund.de/IGS/"
-#define RINEX2_SUBFOLDER "nrt"
-#define RINEX3_SUBFOLDER "nrt_v3"
-#define RINEX_FTP_FILE "%s/%03i/%02i/%4s%03i%c.%02in.gz"
+#define RINEX_FILE_NAME "rinex.gz"
+#define RINEX_HTTPS_URL "https://igs.bkg.bund.de/root_ftp/IGS/nrt/"
+// Example: https://igs.bkg.bund.de/root_ftp/IGS/nrt/326/13/AREG00PER_R_20243261300_01H_GN.rnx.gz
+#define RINEX_HTTPS_FILE "%03i/%02i/%9s_R_%04i%03i%04i_01H_GN.rnx.gz"
 
 /* Maximum length of a line in a text file (RINEX, motion) */
 #define MAX_CHAR (100)
