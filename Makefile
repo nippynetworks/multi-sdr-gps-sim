@@ -1,11 +1,25 @@
 HACKRFSDR ?= no
 PLUTOSDR ?= no
+DEBUG ?= no
+# Detect the operating system
+UNAME_S := $(shell uname -s)
 
 DIALECT = -std=c11
-CFLAGS += $(DIALECT) -Og -g -W -Wall -D_GNU_SOURCE
+CFLAGS += $(DIALECT) -W -Wall -D_GNU_SOURCE
 LIBS = -lm -pthread -lpthread -lcurl -lz -lpanel -lncurses
 LDFLAGS =
 SDR_OBJ = sdr_iqfile.o
+
+ifeq ($(DEBUG), yes)
+    CFLAGS += -Og -g
+endif
+
+# Compilation on Mac OS
+ifeq ($(UNAME_S),Darwin)
+    LIBS += -largp
+    LDFLAGS = -L/opt/homebrew/lib
+    CFLAGS += -I/opt/homebrew/include
+endif
 
 ifeq ($(HACKRFSDR), yes)
     SDR_OBJ += sdr_hackrf.o
@@ -22,7 +36,7 @@ ifeq ($(PLUTOSDR), yes)
 endif
 
 all: gps-sim
-	
+
 %.o: %.c *.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 

@@ -246,9 +246,9 @@ void set_thread_name(const char *name) {
 #endif
 }
 
-// Set affinity of calling thread to specific core on a multi-core CPU
-
+/* Set affinity of calling thread to specific core on a multi-core CPU */
 int thread_to_core(int core_id) {
+#if defined(__GLIBC__)
     int num_cores = sysconf(_SC_NPROCESSORS_ONLN);
     if (core_id < 0 || core_id >= num_cores)
         return EINVAL;
@@ -259,10 +259,14 @@ int thread_to_core(int core_id) {
 
     pthread_t current_thread = pthread_self();
     return pthread_setaffinity_np(current_thread, sizeof (cpu_set_t), &cpuset);
+#else
+    NOTUSED(core_id);
+    return (int)0;
+#endif
 }
 
 /*
- * 
+ *
  */
 int main(int argc, char** argv) {
     int ch = 0;
