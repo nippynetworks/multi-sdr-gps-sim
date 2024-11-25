@@ -198,12 +198,14 @@ static void show_local(location_t *loc) {
     }
 }
 
+#if false
 static void eph_show_header(void) {
     wattron(window[EPHEMERIS], COLOR_PAIR(2));
     mvwprintw(window[EPHEMERIS], 3, 1, "PRN  AZ    ELEV  EPH   SIM        ");
     wattroff(window[EPHEMERIS], COLOR_PAIR(2));
     wrefresh(window[TOP]);
 }
+#endif
 
 static void init_windows(void) {
     int info_x, info_y;

@@ -16,13 +16,13 @@
 #include "sdr_pluto.h"
 #include "sdr.h"
 
-static int no_init(void);
+static int no_init(simulator_t *simulator);
 static void no_close(void);
 static int no_run(void);
 static int no_set_gain(const int);
 
 typedef struct {
-    int (*init)();
+    int (*init)(simulator_t *);
     void (*close)();
     int (*run)();
     int (*set_gain)(const int);
@@ -45,11 +45,12 @@ static sdr_handler sdr_handlers[] = {
     { NULL, NULL, NULL, NULL, NULL, SDR_NONE} /* must come last */
 };
 
-static int no_init() {
+static int no_init(simulator_t *simulator) {
     gui_status_wprintw(RED, "SDR type not recognized; supported SDR types are:\n");
     for (int i = 0; sdr_handlers[i].name; ++i) {
         gui_status_wprintw(RED, "  %s\n", sdr_handlers[i].name);
     }
+    NOTUSED(simulator);
     return -1;
 }
 
