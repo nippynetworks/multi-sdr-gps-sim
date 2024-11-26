@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <curl/curl.h>
 #include <zlib.h>
+#include "download.h"
 #include "sdr.h"
 #include "gui.h"
 #include "fifo.h"
@@ -112,11 +113,6 @@ const stations_t stations[] = {
 };
 
 static char rinex_date[21];
-
-struct http_file {
-    const char *filename;
-    FILE *stream;
-};
 
 const int sinTable512[] = {
     2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35, 38, 41, 44, 47,
@@ -2210,17 +2206,6 @@ static int allocateChannel(channel_t *chan, almanac_gps_t *alm, ephem_t *eph, io
     return (nsat);
 }
 
-static size_t fwrite_rinex(void *buffer, size_t size, size_t nmemb, void *stream) {
-    struct http_file *out = (struct http_file *) stream;
-    if (out && !out->stream) {
-        /* open file for writing */
-        out->stream = fopen(out->filename, "wb");
-        if (!out->stream)
-            return -1; /* failure, can't open file to write */
-    }
-    return fwrite(buffer, size, nmemb, out->stream);
-}
-
 /* Read the list of user motions from the input file
  * xyz Output array of ECEF vectors for user motion
  * filename File name of the text input file
@@ -2340,12 +2325,7 @@ void *gps_thread_ep(void *arg) {
 
     gui_show_location(&simulator->location);
 
-    CURL *curl;
-    CURLcode curl_code = CURLE_GOT_NOTHING;
-    struct http_file http = {
-        RINEX_FILE_NAME,
-        NULL
-    };
+    CURLcode curl_code;
 
     /* On a multi-core CPU we run the main thread and reader thread on different cores.
      * Try sticking the main thread to core 2
@@ -2369,7 +2349,10 @@ void *gps_thread_ep(void *arg) {
         time_t t = time(NULL);
         struct tm *tm = gmtime(&t);
         char* url = malloc(NAME_MAX);
-        int station_index = 0;
+        int station_index = -1;
+        int station_count = 0;
+        int attempts = 1;
+        int max_attempts = 1;
         const stations_t *pstation = stations;
 
         // Get number of stations available, find index for given one
@@ -2377,16 +2360,17 @@ void *gps_thread_ep(void *arg) {
             // Station id given, get index
             if (simulator->station_id != NULL) {
                 if (strncmp(pstation[s].id_v2, simulator->station_id, 4) == 0 || strncmp(pstation[s].id_v3, simulator->station_id, 9) == 0) {
-                    break;
+                    station_index = s;
                 }
             }
-            station_index += 1;
+            station_count += 1;
         }
 
-        // Pick a random station if none given
-        if (simulator->station_id == NULL) {
+        // Pick a random station if none given, or given station couldn't be found
+        if (station_index == -1) {
             srand((unsigned int) g0.sec + (g0.week * 1000000));
-            station_index = rand() % station_index;
+            station_index = rand() % station_count;
+            max_attempts = station_count;
         }
         // Check that we have a picked a valid station
         // Take the first one when invalid
@@ -2394,50 +2378,37 @@ void *gps_thread_ep(void *arg) {
             station_index = 0;
         }
 
-
         // We fetch data from previous hour because the actual hour is still in progress
         tm->tm_hour -= 1;
         if (tm->tm_hour < 0) {
+            tm->tm_yday -= 1;
             tm->tm_hour = 23;
         }
-
-        // Compose HTTPS URL
-        snprintf(url, NAME_MAX, RINEX_HTTPS_URL RINEX_HTTPS_FILE,
-                tm->tm_yday + 1, tm->tm_hour, pstation[station_index].id_v3, tm->tm_year - 100 + 2000, tm->tm_yday + 1, tm->tm_hour * 100);
-        gui_status_wprintw(GREEN, "Pulling RINEX from station: %s - %s\n", pstation[station_index].name, url);
-
-        curl_global_init(CURL_GLOBAL_DEFAULT);
-        curl = curl_easy_init();
-        if (curl) {
-            curl_easy_setopt(curl, CURLOPT_URL, url);
-            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, fwrite_rinex);
-            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &http);
-            // Instruct libcurl to use the native CA store
-            curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
-            if (0 /*simulator->show_verbose*/) {
-                curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-            } else {
-                curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
-            }
-            curl_code = curl_easy_perform(curl);
-            curl_easy_cleanup(curl);
+        if (tm->tm_yday < 0) {
+            tm->tm_year -= 1;
+            // FIXME: Check this is correct? Probably wrong on leap years?
+            tm->tm_yday = 364;
         }
 
-        if (http.stream)
-            fclose(http.stream);
+        do {
+            // Compose HTTPS URL
+            snprintf(url, NAME_MAX, RINEX_HTTPS_URL RINEX_HTTPS_FILE,
+                    tm->tm_yday + 1, tm->tm_hour, pstation[station_index].id_v3, tm->tm_year - 100 + 2000, tm->tm_yday + 1, tm->tm_hour * 100);
+            gui_status_wprintw(GREEN, "Pulling RINEX from station: %s - %s\n", pstation[station_index].name, url);
+
+            curl_code = download_file_to_disk(url, simulator->nav_file_name);
+            if (curl_code == CURLE_OK) {
+                simulator->station_id = strndup(pstation[station_index].id_v3, 9);
+                max_attempts = 0;
+            } else {
+                attempts += 1;
+                station_index = (station_index + 1) % station_count;
+            }
+        } while (attempts <= max_attempts);
 
         free(url);
-        curl_global_cleanup();
-
         if (curl_code != CURLE_OK) {
-            switch (curl_code) {
-                case CURLE_REMOTE_FILE_NOT_FOUND:
-                    gui_status_wprintw(RED, "Curl error: Ephemeris file not found!\n");
-                    break;
-                default:
-                    gui_status_wprintw(RED, "Curl error: %d\n", curl_code);
-                    break;
-            }
+            gui_status_wprintw(RED, "Curl error: Unable to download any emphemeris file!\n");
             goto end_gps_thread;
         }
     }
