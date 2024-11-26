@@ -15,6 +15,7 @@
 #include <math.h>
 #include "gps-sim.h"
 #include "almanac.h"
+#include "download.h"
 
 static almanac_gps_t almanac_gps;
 
@@ -50,20 +51,6 @@ almanac_gps_t* almanac_init(void) {
         a->af1 = 0.0;
     }
     return &almanac_gps;
-}
-
-/**
- * Curl file writer callback.
- */
-static size_t fwrite_sem(void *buffer, size_t size, size_t nmemb, void *stream) {
-    struct sem_file *out = (struct sem_file *) stream;
-    if (out && !out->stream) {
-        /* open file for writing */
-        out->stream = fopen(out->filename, "wb");
-        if (!out->stream)
-            return -1; /* failure, can't open file to write */
-    }
-    return fwrite(buffer, size, nmemb, out->stream);
 }
 
 /**
@@ -179,32 +166,11 @@ error:
  *
  */
 CURLcode almanac_download(void) {
-    CURL *curl;
-    CURLcode res = CURLE_GOT_NOTHING;
-    struct sem_file sem = {
-        "almanac.sem",
-        NULL
-    };
+    CURLcode res;
 
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-    curl = curl_easy_init();
-    if (curl) {
-        curl_easy_setopt(curl, CURLOPT_URL, ALMANAC_DOWNLOAD_SEM_URL);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, fwrite_sem);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &sem);
-        curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
-        res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
-    }
-
-    if (sem.stream)
-        fclose(sem.stream);
-
-    curl_global_cleanup();
-
+    res = download_file_to_disk(ALMANAC_DOWNLOAD_SEM_URL, "almanac.sem");
     if (res != CURLE_OK) {
         return res;
     }
-
     return (almanac_read_file());
 }

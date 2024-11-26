@@ -308,7 +308,7 @@ int main(int argc, char** argv) {
     struct timespec timeout;
     struct timeval now;
     gettimeofday(&now, NULL);
-    timeout.tv_sec = now.tv_sec + 30;
+    timeout.tv_sec = now.tv_sec + 120;
     timeout.tv_nsec = 0;
 
     // Init prior GPS thread, creates FIFO.
