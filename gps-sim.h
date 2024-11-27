@@ -62,7 +62,6 @@ typedef struct {
     bool interactive_mode;
     bool online_fetch;
     bool enable_tx_amp;
-    bool use_rinex3;
     bool time_overwrite;
     bool almanac_enable;
     int duration;

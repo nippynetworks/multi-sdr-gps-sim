@@ -103,7 +103,6 @@ Options:
 --interactive       -i  Use interactive mode
 --amplifier         -a  Enable TX amplifier (default OFF)
 --online-fetch      -f  Pull actual RINEX navigation file from HTTP server
---rinex3            -3  Use RINEX v3 navigation data format
 --disable-almanac       Disable transmission of almanac information
 --help              -?  Give this help list
 --usage                 Give a short usage message

@@ -1095,6 +1095,46 @@ static gpstime_t incGpsTime(gpstime_t g0, double dt) {
     return (g1);
 }
 
+static int readRinexVersion(const char *fname) {
+    struct gzFile_s *fp;
+
+    char str[MAX_CHAR];
+    char tmp[20];
+    double ver = 0.0;
+    int version = 0;
+
+    if (NULL == (fp = gzopen(fname, "rt")))
+        return (-1);
+
+    // Read header lines
+    while (1) {
+        if (NULL == gzgets(fp, str, MAX_CHAR))
+            break;
+
+        if (strncmp(str + 60, "COMMENT", 7) == 0) {
+            continue;
+        } else if (strncmp(str + 60, "END OF HEADER", 13) == 0) {
+            break;
+        } else if (strncmp(str + 60, "RINEX VERSION / TYPE", 20) == 0) {
+            strncpy(tmp, str, 9);
+            tmp[9] = 0;
+            replaceExpDesignator(tmp, 9);
+            ver = atof(tmp);
+            if ((ver >= 2.0) && (ver < 3.0) && (str[20] == 'N')) {
+                version = 2;
+                break;
+            }
+
+            if ((ver >= 3.0) && (ver < 4.0) && (str[20] == 'N') && (str[40] == 'G')) {
+                version = 3;
+                break;
+            }
+        }
+    }
+    gzclose(fp);
+    return version;
+}
+
 /* Read Ephemeris data from the RINEX v2 Navigation file
  * eph Array of Output SV ephemeris data
  * fname File name of the RINEX file
@@ -2273,7 +2313,7 @@ void *gps_thread_ep(void *arg) {
     int ibs; // boresight angle index
     int igrx;
     int sv;
-    int neph, ieph;
+    int neph = 0, ieph;
     int i;
     int ip, qp;
     int iTable;
@@ -2413,14 +2453,17 @@ void *gps_thread_ep(void *arg) {
         }
     }
 
-    if (simulator->use_rinex3) {
+    int rinex_version = readRinexVersion(simulator->nav_file_name);
+    if (rinex_version == 2) {
+        neph = readRinex2(eph, &ionoutc, simulator->nav_file_name);
+    } else if (rinex_version == 3) {
         neph = readRinex3(eph, &ionoutc, simulator->nav_file_name);
     } else {
-        neph = readRinex2(eph, &ionoutc, simulator->nav_file_name);
+        gui_status_wprintw(RED, "Unable to determine if emphemeris version is 2 or 3.\n");
     }
 
     if (neph == 0) {
-        gui_status_wprintw(RED, "No ephemeris available.\n");
+        gui_status_wprintw(RED, "No valid ephemeris available.\n");
         goto end_gps_thread;
     }
 

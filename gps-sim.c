@@ -150,9 +150,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
         case 'i':
             simulator.interactive_mode = true;
             break;
-        case '3':
-            simulator.use_rinex3 = true;
-            break;
         case 'p':
             if (arg == NULL) {
                 return ARGP_ERR_UNKNOWN;
@@ -184,7 +181,6 @@ static void simulator_init(void) {
     simulator.interactive_mode = false;
     simulator.online_fetch = false;
     simulator.enable_tx_amp = false;
-    simulator.use_rinex3 = false;
     simulator.time_overwrite = false;
     simulator.almanac_enable = true;
     simulator.duration = USER_MOTION_SIZE;
