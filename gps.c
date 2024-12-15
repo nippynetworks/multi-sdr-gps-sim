@@ -2550,8 +2550,8 @@ void *gps_thread_ep(void *arg) {
                 }
             }
         } else {
-            if (subGpsTime(g0, gmin) < 0.0 || subGpsTime(gmax, g0) < 0.0) {
-                gui_status_wprintw(RED, "Invalid start time.\n");
+            if (subGpsTime(g0, gmin) < 0.0 || subGpsTime(gmax, g0) < -28800.0) {
+                gui_status_wprintw(RED, "Invalid start time. Must be: tmin -> tmax +8hr\n");
                 gui_status_wprintw(RED, "tmin = %4d/%02d/%02d,%02d:%02d:%02.0f (%d:%.0f)\n",
                         tmin.y, tmin.m, tmin.d, tmin.hh, tmin.mm, tmin.sec,
                         gmin.week, gmin.sec);
@@ -2581,7 +2581,7 @@ void *gps_thread_ep(void *arg) {
         for (sv = 0; sv < MAX_SAT; sv++) {
             if (eph[i][sv].vflg == true) {
                 dt = subGpsTime(g0, eph[i][sv].toc);
-                if (dt >= -SECONDS_IN_HOUR && dt < SECONDS_IN_HOUR) {
+                if (dt >= -SECONDS_IN_HOUR && ((dt < SECONDS_IN_HOUR) || (i == (neph - 1) && dt < SECONDS_IN_HOUR * 8))) {
                     ieph = i;
                     break;
                 }
