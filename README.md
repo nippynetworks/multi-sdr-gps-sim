@@ -88,6 +88,7 @@ gps-sim [options]
 Options:
 --nav-file          -e  <filename> RINEX navigation file for GPS ephemeris (required)
 --geo-loc           -l  <location> Latitude, Longitude, Height (static mode) e.g. 35.681298,139.766247,10.0
+--start-ow          -S  <date,time> Scenario start time YYYY/MM/DD,hh:mm:ss, overwrite ToE/ToC (use 'now' for actual time)
 --start             -s  <date,time> Scenario start time YYYY/MM/DD,hh:mm:ss (use 'now' for actual time)
 --gain              -g  <gain> Set TX gain, HackRF: 0-47dB, Pluto: -80-0dB (default 0)
 --duration          -d  <seconds> Duration in seconds

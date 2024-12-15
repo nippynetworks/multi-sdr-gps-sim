@@ -82,12 +82,14 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
             }
             sscanf(arg, "%lf,%lf,%lf", &simulator.location.lat, &simulator.location.lon, &simulator.location.height);
             break;
+        case 'S':
+            simulator.time_overwrite = true;
+            // fall through to 's' path
         case 's':
             if (arg == NULL) {
                 return ARGP_ERR_UNKNOWN;
             }
             if (strncmp(arg, "now", 3) == 0) {
-                simulator.time_overwrite = true;
                 time_t timer;
                 struct tm *gmt;
 
