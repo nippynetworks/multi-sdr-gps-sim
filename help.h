@@ -22,6 +22,7 @@ static struct argp_option options[] = {
     {"nav-file", 'e', "filename", 0, "RINEX navigation file for GPS ephemeris (required)", 1},
     {"online-fetch", 'f', 0, 0, "Pull actual RINEX navigation file and almanac from online source", 1},
     {"geo-loc", 'l', "location", 0, "Latitude, Longitude, Height (static mode) e.g. 35.681298,139.766247,10.0", 1},
+    {"start-ow", 'S', "date,time", 0, "Scenario start time YYYY/MM/DD,hh:mm:ss, overwrite ToC/ToE (use 'now' for actual time)", 1},
     {"start", 's', "date,time", 0, "Scenario start time YYYY/MM/DD,hh:mm:ss (use 'now' for actual time)", 1},
     {"disable-iono", 'I', 0, 0, "Disable ionospheric delay for spacecraft scenario", 1},
     {"verbose", 'v', 0, 0, "Show verbose output and details about simulated channels", 1},
