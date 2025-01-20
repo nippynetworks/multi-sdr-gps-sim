@@ -13,6 +13,8 @@
 #ifndef GUI_H
 #define GUI_H
 
+#include <ncurses.h>
+
 #define ROW_THRD 26
 #define COL_THRD 120
 #define HEAD_HEIGHT 13
@@ -30,6 +32,10 @@
 #define DOWNSPEED_KEY 'q'
 #define GAIN_INC_KEY 't'
 #define GAIN_DEC_KEY 'g'
+#define STOP_KEY '0'
+
+// Basic implementation of toupper which should work for ASCII a-z
+#define TOUPPER(c) ((c) - ('a' - 'A'))
 
 typedef enum {
     TRACK = 0,

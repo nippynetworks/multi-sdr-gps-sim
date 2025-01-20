@@ -362,37 +362,73 @@ int main(int argc, char** argv) {
                 case 267: // F3
                     gui_top_panel(KF_FIX);
                     break;
+                // Direction input
                 case LEFT_KEY:
-                    simulator.target.bearing -= 127.0;
-                    if (simulator.target.bearing < 0) simulator.target.bearing = 360000.0;
-                    if (simulator.target.bearing > 360000) simulator.target.bearing = 0;
-                    gui_show_heading((float) (simulator.target.bearing / 1000));
-                    break;
+                    simulator.target.bearing -= 100.0;
+                    goto left_right;
+                case TOUPPER(LEFT_KEY):
+                    simulator.target.bearing -= 1000.0;
+                    goto left_right;
                 case RIGHT_KEY:
-                    simulator.target.bearing += 127.0;
-                    if (simulator.target.bearing < 0) simulator.target.bearing = 360000.0;
-                    if (simulator.target.bearing > 360000) simulator.target.bearing = 0;
+                    simulator.target.bearing += 100.0;
+                    goto left_right;
+                case TOUPPER(RIGHT_KEY):
+                    simulator.target.bearing += 1000.0;
+                    goto left_right;
+                case KEY_UP:
+                    simulator.target.bearing = 0;
+                    goto left_right;
+                case KEY_RIGHT:
+                    simulator.target.bearing = 90000.0;
+                    goto left_right;
+                case KEY_DOWN:
+                    simulator.target.bearing = 180000.0;
+                    goto left_right;
+                case KEY_LEFT:
+                    simulator.target.bearing = 270000.0;
+left_right:
+                    if (simulator.target.bearing < 0) simulator.target.bearing = simulator.target.bearing + 360000;
+                    if (simulator.target.bearing > 360000) simulator.target.bearing = simulator.target.bearing - 360000;
                     gui_show_heading((float) (simulator.target.bearing / 1000));
                     break;
+                // Vertical velocity key input
                 case UP_KEY:
                     simulator.target.vertical_speed += 1;
-                    gui_show_vertical_speed((float) simulator.target.vertical_speed);
-                    break;
+                    goto up_down;
+                case TOUPPER(UP_KEY):
+                    simulator.target.vertical_speed += 10;
+                    goto up_down;
                 case DOWN_KEY:
                     simulator.target.vertical_speed -= 1;
+                    goto up_down;
+                case TOUPPER(DOWN_KEY):
+                    simulator.target.vertical_speed -= 10;
+up_down:
                     gui_show_vertical_speed((float) simulator.target.vertical_speed);
                     break;
+                // Speed key input
                 case UPSPEED_KEY:
-                    simulator.target.speed += 1.0;
-                    simulator.target.velocity = simulator.target.speed / 100.0;
-                    gui_show_speed((float) (simulator.target.velocity * 3.6));
-                    break;
+                    simulator.target.speed += 2.77778;
+                    goto up_down_speed;
+                case TOUPPER(UPSPEED_KEY):
+                    simulator.target.speed += 27.7778;
+                    goto up_down_speed;
                 case DOWNSPEED_KEY:
-                    simulator.target.speed -= 1.0;
-                    if (simulator.target.speed < 0) simulator.target.speed = 0;
+                    simulator.target.speed -= 2.77778;
+                    goto up_down_speed;
+                case TOUPPER(DOWNSPEED_KEY):
+                    simulator.target.speed -= 27.7778;
+up_down_speed:
+                    if (simulator.target.speed < 0.0) simulator.target.speed = 0.0;
                     simulator.target.velocity = simulator.target.speed / 100.0;
                     gui_show_speed((float) (simulator.target.velocity * 3.6));
                     break;
+                case STOP_KEY:
+                    gui_status_wprintw(RED, "Got a 0!\r");
+                    simulator.target.speed = simulator.target.vertical_speed = simulator.target.velocity = 0.0;
+                    gui_show_speed((float) (simulator.target.velocity * 3.6));
+                    break;
+                // amplifier gain key input
                 case GAIN_INC_KEY:
                     simulator.tx_gain = sdr_set_gain(simulator.tx_gain + 1);
                     gui_status_wprintw(GREEN, "Gain: %ddB.\r", simulator.tx_gain);
