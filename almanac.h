@@ -39,12 +39,13 @@ typedef struct {
 
 typedef struct {
     unsigned int valid; // Almanac validity
+    gpstime_t almanac_time;
     almanac_prn_t sv[MAX_SAT]; // 32 SV's almanac
 } almanac_gps_t;
 
 almanac_gps_t* almanac_init(void);
-CURLcode almanac_read_file(void);
-CURLcode almanac_download(void);
+CURLcode almanac_read_file(char* almanac_file_name);
+CURLcode almanac_download(char* almanac_file_name);
 
 #endif /* ALMANAC_H */
 

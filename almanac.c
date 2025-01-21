@@ -29,6 +29,9 @@ struct sem_file {
  */
 almanac_gps_t* almanac_init(void) {
     almanac_gps.valid = 0;
+    almanac_gps.almanac_time.week = 0;
+    almanac_gps.almanac_time.sec = 0;
+
     almanac_prn_t* a = NULL;
     for (int prn = 0; prn < MAX_SAT; prn++) {
         a = &almanac_gps.sv[prn];
@@ -57,12 +60,14 @@ almanac_gps_t* almanac_init(void) {
  * Read almanac from local file.
  * sem format expected.
  */
-CURLcode almanac_read_file(void) {
+CURLcode almanac_read_file(char* almanac_file_name) {
     char buf[100];
     char title[25];
     char *pbuf;
     unsigned int n, week, sec, id;
-    FILE *fp = fopen("almanac.sem", "rt");
+    almanac_gps_t* almanac = &almanac_gps;
+
+    FILE *fp = fopen(almanac_file_name, "rt");
     almanac_prn_t* a = NULL;
 
     // Start with empty almanac
@@ -80,6 +85,9 @@ CURLcode almanac_read_file(void) {
     // GPS week rollover
     week += 2048;
 
+    almanac->almanac_time.week = (int) week;
+    almanac->almanac_time.sec = (double) sec;
+
     n -= 1; // PRN in file counts 1-32, array counts 0-31
     if (n > 31) n = 31; // Max 32 PRN's to read (0-31)
 
@@ -96,7 +104,7 @@ CURLcode almanac_read_file(void) {
         if (id == 0) id = 1;
         if (id > 32) id = 32;
 
-        a = &almanac_gps.sv[id - 1];
+        a = &almanac->sv[id - 1];
 
         a->svid = (unsigned short) id;
 
@@ -140,7 +148,7 @@ CURLcode almanac_read_file(void) {
         a->toa.sec = (double) sec;
 
         a->valid = 1;
-        almanac_gps.valid = 1; // We have at least one valid record
+        almanac->valid = 1; // We have at least one valid record
     }
     fclose(fp);
     return CURLE_OK;
@@ -165,12 +173,12 @@ error:
  * sem format expected.
  *
  */
-CURLcode almanac_download(void) {
+CURLcode almanac_download(char* almanac_file_name) {
     CURLcode res;
 
-    res = download_file_to_disk(ALMANAC_DOWNLOAD_SEM_URL, "almanac.sem");
+    res = download_file_to_disk(ALMANAC_DOWNLOAD_SEM_URL, almanac_file_name);
     if (res != CURLE_OK) {
         return res;
     }
-    return (almanac_read_file());
+    return (almanac_read_file(almanac_file_name));
 }

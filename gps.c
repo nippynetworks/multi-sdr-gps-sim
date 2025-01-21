@@ -2601,12 +2601,13 @@ void *gps_thread_ep(void *arg) {
     // Read almanac
     ////////////////////////////////////////////////////////////
 
+    char* almanac_file_name = "almanac.sem";
     almanac_gps_t *alm = almanac_init();
     if (simulator->almanac_enable) {
         if (simulator->online_fetch) {
-            curl_code = almanac_download();
+            curl_code = almanac_download(almanac_file_name);
         } else {
-            curl_code = almanac_read_file();
+            curl_code = almanac_read_file(almanac_file_name);
         }
 
         if (curl_code != CURLE_OK) {
@@ -2625,21 +2626,13 @@ void *gps_thread_ep(void *arg) {
     }
 
     if (simulator->almanac_enable && alm->valid) {
-        gtmp.sec = 0.0;
-        gtmp.week = 0;
-        // Check TOA
-        for (sv = 0; sv < MAX_SAT; sv++) {
-            if (alm->sv[sv].valid != 0) // Valid almanac
-            {
-                gtmp = alm->sv[sv].toa;
-                dt = subGpsTime(alm->sv[sv].toa, g0);
-                if (dt < (-4.0 * SECONDS_IN_WEEK) || dt > (4.0 * SECONDS_IN_WEEK)) {
-                    gui_status_wprintw(RED, "Invalid time of almanac.\n");
-                    goto end_gps_thread;
-                }
-            }
+        dt = subGpsTime(alm->almanac_time, g0);
+        if (dt < (-4.0 * SECONDS_IN_WEEK) || dt > (4.0 * SECONDS_IN_WEEK)) {
+            gui_status_wprintw(RED, "Invalid time of almanac.\n");
+            goto end_gps_thread;
         }
-        gps2date(&gtmp, &ttmp);
+
+        gps2date(&alm->almanac_time, &ttmp);
         gui_mvwprintw(LS_FIX, 9, 40, "Almanac date:    %4d/%02d/%02d,%02d:%02d:%02.0f",
                 ttmp.y, ttmp.m, ttmp.d, ttmp.hh, ttmp.mm, ttmp.sec);
     } else {
