@@ -13,6 +13,8 @@
 #ifndef GPS_H
 #define GPS_H
 
+#include "time.h"
+
 /* For RKT simulation. Higher computational load, but smoother carrier phase.*/
 #define FLOAT_CARR_PHASE
 
@@ -54,12 +56,6 @@
 
 /* C/A code sequence length */
 #define CA_SEQ_LEN (1023)
-
-#define SECONDS_IN_WEEK 604800.0
-#define SECONDS_IN_HALF_WEEK 302400.0
-#define SECONDS_IN_DAY 86400.0
-#define SECONDS_IN_HOUR 3600.0
-#define SECONDS_IN_MINUTE 60.0
 
 #define POW2_M5  0.03125
 #define POW2_M19 1.907348632812500e-6
@@ -130,22 +126,6 @@
  * with valid parity. (IS-GPS-200L, p.111, 20.3.3.5.1.2)
  */
 #define EMPTY_WORD 0xaaaaaaaaUL 
-
-/* Structure representing GPS time */
-typedef struct {
-    int week; /* GPS week number (since January 1980) */
-    double sec; /* second inside the GPS \a week */
-} gpstime_t;
-
-/* Structure repreenting UTC time */
-typedef struct {
-    int y; /* Calendar year */
-    int m; /* Calendar month */
-    int d; /* Calendar day */
-    int hh; /* Calendar hour */
-    int mm; /* Calendar minutes */
-    double sec; /* Calendar seconds */
-} datetime_t;
 
 /* Structure representing ephemeris of a single satellite */
 typedef struct {
