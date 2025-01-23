@@ -134,8 +134,8 @@ int sdr_hackrf_init(simulator_t *simulator) {
     sample_rate_gps_hz = TX_SAMPLERATE;
     freq_gps_hz = TX_FREQUENCY;
     // Change the freq and sample rate to correct the crystal clock error.
-    // sample_rate_gps_hz = (uint32_t) ((double) sample_rate_gps_hz * (10000000 - simulator->ppb) / 10000000 + 0.5);
-    freq_gps_hz = freq_gps_hz * (10000000 - simulator->ppb) / 10000000;
+    sample_rate_gps_hz = (uint32_t) ((double) sample_rate_gps_hz * (1000000000LL - simulator->ppb) / 1000000000LL + 0.5);
+    freq_gps_hz = freq_gps_hz * (1000000000LL - simulator->ppb) / 1000000000LL;
 
     /* Compute default value depending on sample rate */
     baseband_filter_bw_hackrf_hz = hackrf_compute_baseband_filter_bw(TX_BW);
