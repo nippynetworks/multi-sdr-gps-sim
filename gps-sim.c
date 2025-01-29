@@ -437,6 +437,21 @@ up_down_speed:
                     simulator.target.velocity = simulator.target.speed / 100.0;
                     gui_show_speed((float) (simulator.target.velocity * 3.6));
                     break;
+                // Offset key input
+                case INCOFFSET_KEY:
+                    simulator.offset_ns += 1;
+                    goto inc_dec_offset;
+                case TOUPPER(INCOFFSET_KEY):
+                    simulator.offset_ns += 100;
+                    goto inc_dec_offset;
+                case DECOFFSET_KEY:
+                    simulator.offset_ns -= 1;
+                    goto inc_dec_offset;
+                case TOUPPER(DECOFFSET_KEY):
+                    simulator.offset_ns -= 100;
+inc_dec_offset:
+                    gui_show_offset(simulator.offset_ns);
+                    break;
                 case STOP_KEY:
                     gui_status_wprintw(RED, "Got a 0!\r");
                     simulator.target.speed = simulator.target.vertical_speed = simulator.target.velocity = 0.0;

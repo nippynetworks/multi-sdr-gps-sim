@@ -1533,16 +1533,17 @@ void *gps_thread_ep(void *arg) {
     }
 
     if (simulator->show_verbose) {
+        int y=15;
         if (ionoutc.vflg && ionoutc.enable) {
-            gui_mvwprintw(LS_FIX, 14, 40, "ION ALPHA %12.3e %12.3e %12.3e %12.3e",
+            gui_mvwprintw(LS_FIX, y++, 40, "ION ALPHA %12.3e %12.3e %12.3e %12.3e",
                     ionoutc.alpha0, ionoutc.alpha1, ionoutc.alpha2, ionoutc.alpha3);
-            gui_mvwprintw(LS_FIX, 15, 40, "ION BETA  %12.3e %12.3e %12.3e %12.3e",
+            gui_mvwprintw(LS_FIX, y++, 40, "ION BETA  %12.3e %12.3e %12.3e %12.3e",
                     ionoutc.beta0, ionoutc.beta1, ionoutc.beta2, ionoutc.beta3);
-            gui_mvwprintw(LS_FIX, 16, 40, "DELTA UTC %12.3e %12.3e %9d  %9d",
+            gui_mvwprintw(LS_FIX, y++, 40, "DELTA UTC %12.3e %12.3e %9d  %9d",
                     ionoutc.A0, ionoutc.A1, ionoutc.tot, ionoutc.wnt);
-            gui_mvwprintw(LS_FIX, 17, 40, "LEAP SECONDS %d", ionoutc.dtls);
+            gui_mvwprintw(LS_FIX, y++, 40, "LEAP SECONDS %d", ionoutc.dtls);
         } else {
-            gui_mvwprintw(LS_FIX, 14, 40, "Ionospheric data invalid or disabled!");
+            gui_mvwprintw(LS_FIX, y++, 40, "Ionospheric data invalid or disabled!");
         }
     }
 

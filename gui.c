@@ -198,6 +198,14 @@ static void show_local(location_t *loc) {
     }
 }
 
+static void show_offset(int64_t offset_ns) {
+    mvwprintw(window[LS_FIX], 13, 40, "Time offset:     %lldns", offset_ns);
+    if (window[TOP] == window[KF_FIX]) {
+        wrefresh(window[TOP]);
+    }
+}
+
+
 #if false
 static void eph_show_header(void) {
     wattron(window[EPHEMERIS], COLOR_PAIR(2));
@@ -227,6 +235,7 @@ static void init_windows(void) {
     window[LOCATION] = subwin(window[KF_FIX], 4, 26, 4, 2);
     location_t l = {0};
     show_local(&l);
+    show_offset(0);
 
     /* setup info window */
     info_x = (max_x - info_width) / 2;
@@ -261,6 +270,8 @@ static void init_windows(void) {
     mvwprintw(window[HELP], 7, 2, "q   Decrease speed        F3   Position Window");
     mvwprintw(window[HELP], 8, 2, "t   Increase TX gain      arrow keys move NSEW");
     mvwprintw(window[HELP], 9, 2, "g   Decrease TX gain      shift adjust faster");
+    mvwprintw(window[HELP], 9, 2, "p   Increase sim offset");
+    mvwprintw(window[HELP], 9, 2, "o   Decrease sim offset");
 
     /* Attach a panel to each window
      * Order is bottom up
@@ -471,5 +482,11 @@ void gui_show_location(void *l) {
 void gui_show_target(void *t) {
     pthread_mutex_lock(&gui_lock);
     show_target((target_t *) (t));
+    pthread_mutex_unlock(&gui_lock);
+}
+
+void gui_show_offset(int64_t offset_ns) {
+    pthread_mutex_lock(&gui_lock);
+    show_offset(offset_ns);
     pthread_mutex_unlock(&gui_lock);
 }

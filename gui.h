@@ -30,6 +30,8 @@
 #define LEFT_KEY  'a'
 #define UPSPEED_KEY  'e'
 #define DOWNSPEED_KEY 'q'
+#define INCOFFSET_KEY  'p'
+#define DECOFFSET_KEY 'o'
 #define GAIN_INC_KEY 't'
 #define GAIN_DEC_KEY 'g'
 #define STOP_KEY '0'
@@ -80,6 +82,7 @@ void gui_show_speed(float speed);
 void gui_show_heading(float hdg);
 void gui_show_vertical_speed(float vs);
 void gui_show_location(void *l);
+void gui_show_offset(int64_t offset_ns);
 void gui_show_target(void *t);
 
 #endif /* GUI_H */
