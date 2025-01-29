@@ -90,18 +90,24 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
                 return ARGP_ERR_UNKNOWN;
             }
             if (strncmp(arg, "now", 3) == 0) {
-                time_t timer;
-                struct tm *gmt;
+                struct timespec ts;
+                int ret = clock_gettime(CLOCK_REALTIME, &ts);
 
-                time(&timer);
-                gmt = gmtime(&timer);
+                if (ret != 0) {
+                    perror("clock_gettime");
+                    return ARGP_ERR_UNKNOWN;
+                }
+                struct tm *gmt = gmtime(&ts.tv_sec);
 
                 simulator.start.y = gmt->tm_year + 1900;
                 simulator.start.m = gmt->tm_mon + 1;
                 simulator.start.d = gmt->tm_mday;
                 simulator.start.hh = gmt->tm_hour;
                 simulator.start.mm = gmt->tm_min;
+                // simulator.start.sec = (double) gmt->tm_sec + (double) (ts.tv_nsec - 162000000L) / 1e9;
                 simulator.start.sec = (double) gmt->tm_sec;
+
+                simulator.realtime_sim = true;
             } else {
                 sscanf(arg, "%d/%d/%d,%d:%d:%lf", &simulator.start.y, &simulator.start.m, &simulator.start.d, &simulator.start.hh, &simulator.start.mm, &simulator.start.sec);
             }
@@ -158,6 +164,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
             }
             simulator.ppb = atoi(arg);
             break;
+        case 'x':
+            simulator.sync_start = true;
+            break;
         case 700: // --iq16
             simulator.sample_size = SC16;
             break;
@@ -185,6 +194,8 @@ static void simulator_init(void) {
     simulator.enable_tx_amp = false;
     simulator.time_overwrite = false;
     simulator.almanac_enable = true;
+    simulator.realtime_sim = false;
+    simulator.sync_start = false;
     simulator.duration = USER_MOTION_SIZE;
     simulator.tx_gain = 0;
     simulator.ppb = 0;
@@ -196,6 +207,9 @@ static void simulator_init(void) {
     simulator.target.lat = 0;
     simulator.target.lon = 0;
     simulator.target.height = 0;
+    simulator.sdr_latency_ns = 0;
+    simulator.offset_ns = 0;
+    simulator.elapsed_ns = 0;
     simulator.target.valid = false;
     simulator.nav_file_name = NULL;
     simulator.sdr_name = NULL;

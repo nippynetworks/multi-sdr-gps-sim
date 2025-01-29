@@ -41,6 +41,9 @@ int sdr_hackrf_init(simulator_t *simulator) {
     uint64_t freq_gps_hz;
     int y = gui_y_offset;
 
+    // Transmit latency assuming triggered with a PPS signal
+    simulator->sdr_latency_ns = HACKRF_LATENCY;
+
     // HackRF wants 8 bit signed samples
     if (simulator->sample_size == SC16) {
         gui_status_wprintw(YELLOW, "16 bit sample size requested. Reset to 8 bit with HackRF.\n");
@@ -181,6 +184,8 @@ int sdr_hackrf_init(simulator_t *simulator) {
         return -1;
     }
 
+    gui_mvwprintw(TRACK, y++, gui_x_offset, "Latency offset: %lld ns", simulator->sdr_latency_ns);
+
     if (simulator->enable_tx_amp) {
         gui_mvwprintw(TRACK, y++, gui_x_offset, "Amplifier enabled");
         result = hackrf_set_amp_enable(device, 1);
@@ -206,7 +211,7 @@ int sdr_hackrf_init(simulator_t *simulator) {
         return -1;
     }
 
-    result = hackrf_set_hw_sync_mode(device, 0);
+    result = hackrf_set_hw_sync_mode(device, simulator->sync_start ? 1 : 0);
     if (result != HACKRF_SUCCESS) {
         gui_status_wprintw(RED, "hackrf_set_hw_sync_mode() failed: %s (%d)", hackrf_error_name(result), result);
         return -1;

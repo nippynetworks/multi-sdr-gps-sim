@@ -1633,7 +1633,7 @@ void *gps_thread_ep(void *arg) {
     }
 
     gui_mvwprintw(LS_FIX, 8, 40, "RINEX date:      %s", rinex_date);
-    gui_mvwprintw(LS_FIX, 10, 40, "Start time:      %4d/%02d/%02d,%02d:%02d:%02.0f (%d:%.0f)",
+    gui_mvwprintw(LS_FIX, 10, 40, "Start time:      %4d/%02d/%02d,%02d:%02d:%02.9f (%d:%.0f)",
             simulator->start.y, simulator->start.m, simulator->start.d, simulator->start.hh, simulator->start.mm, simulator->start.sec, g0.week, g0.sec);
     if (simulator->show_verbose) {
         gui_mvwprintw(LS_FIX, 11, 40, "Simulation time: ");
@@ -1713,6 +1713,41 @@ void *gps_thread_ep(void *arg) {
     ////////////////////////////////////////////////////////////
     gpstime_t grx;
 
+    if (simulator->realtime_sim) {
+        struct timespec ts;
+        int ret = clock_gettime(CLOCK_REALTIME, &ts);
+
+        if (ret != 0) {
+            perror("clock_gettime");
+            gui_status_wprintw(RED, "Failed to get clock.\n");
+            goto end_gps_thread;
+        }
+        struct tm *gmt = gmtime(&ts.tv_sec);
+        datetime_t start;
+
+        start.y = gmt->tm_year + 1900;
+        start.m = gmt->tm_mon + 1;
+        start.d = gmt->tm_mday;
+        start.hh = gmt->tm_hour;
+        start.mm = gmt->tm_min;
+        start.sec = (double) gmt->tm_sec;
+        date2gps(&start, &g0);
+
+        if (simulator->sync_start) {
+            incGpsTime(g0, 1.0);
+            simulator->elapsed_ns = 0.0 - simulator->sdr_latency_ns;
+        } else {
+            simulator->elapsed_ns = ts.tv_nsec - simulator->sdr_latency_ns;
+        }
+    } else {
+        simulator->elapsed_ns = round((g0.sec - floor(g0.sec)) * 1e9) - simulator->sdr_latency_ns;
+        g0.sec = floor(g0.sec);
+    }
+
+
+    // Initial reception time
+    grx = incGpsTime(g0, (double)(simulator->elapsed_ns + simulator->offset_ns) / 1e9);
+
     ////////////////////////////////////////////////////////////
     // Initialize channels
     ////////////////////////////////////////////////////////////
@@ -1729,9 +1764,6 @@ void *gps_thread_ep(void *arg) {
     // Clear satellite allocation flag
     for (int sv = 0; sv < MAX_SAT; sv++)
         allocatedSat[sv] = -1;
-
-    // Initial reception time
-    grx = incGpsTime(g0, 0.0);
 
     // Allocate visible satellites
     allocateChannel(chan, alm, eph[ieph], ionoutc, grx, xyz[0], elvmask);
@@ -1751,12 +1783,14 @@ void *gps_thread_ep(void *arg) {
         ant_pat[i] = pow(10.0, -ant_pat_db[i] / 20.0);
 
     // Update receiver time
-    grx = incGpsTime(grx, 0.1);
+    // grx = incGpsTime(grx, 0.1);
+    simulator->elapsed_ns += 1e8;
+    grx = incGpsTime(g0, (double)(simulator->elapsed_ns + simulator->offset_ns) / 1e9);
 
     // Create IQ buffer.
     iq_buff = calloc(IQ_BUFFER_SIZE, 2);
 
-    // Aquire first fifo block for transfer buffer
+    // Acquire first fifo block for transfer buffer
     struct iq_buf *iq = fifo_acquire();
 
     ////////////////////////////////////////////////////////////
@@ -1978,7 +2012,7 @@ void *gps_thread_ep(void *arg) {
 
             if (simulator->show_verbose) {
                 gps2date(&grx, &simulator->start);
-                gui_mvwprintw(LS_FIX, 11, 57, "%4d/%02d/%02d,%02d:%02d:%02.0f (%d:%.0f)",
+                gui_mvwprintw(LS_FIX, 11, 57, "%4d/%02d/%02d,%02d:%02d:%02.9f (%d:%.0f)",
                         simulator->start.y, simulator->start.m, simulator->start.d, simulator->start.hh, simulator->start.mm, simulator->start.sec, grx.week, grx.sec);
                 gui_mvwprintw(LS_FIX, 5, 40, "xyz = %11.1f, %11.1f, %11.1f", xyz[iumd][0], xyz[iumd][1], xyz[iumd][2]);
                 gui_mvwprintw(LS_FIX, 6, 40, "llh = %11.6f, %11.6f, %11.1f", llh[0] * R2D, llh[1] * R2D, llh[2]);
@@ -2000,10 +2034,17 @@ void *gps_thread_ep(void *arg) {
             }
         }
         // Update receiver time
-        grx = incGpsTime(grx, 0.1);
+        // grx = incGpsTime(grx, 0.100 + 0.0000001046);
+        simulator->elapsed_ns += 1e8;
+        grx = incGpsTime(g0, (double)(simulator->elapsed_ns + simulator->offset_ns) / 1e9);
 
         // Update time counter
-        gui_mvwprintw(LS_FIX, 12, 40, "Elapsed:         %5.1fs", subGpsTime(grx, g0));
+        if (simulator->show_verbose && (igrx % 10 == 0)) {
+            gps2date(&grx, &simulator->start);
+            gui_mvwprintw(LS_FIX, 11, 57, "%4d/%02d/%02d,%02d:%02d:%02.9f (%d:%.0f)",
+                          simulator->start.y, simulator->start.m, simulator->start.d, simulator->start.hh, simulator->start.mm, simulator->start.sec, grx.week, grx.sec);
+        }
+        gui_mvwprintw(LS_FIX, 12, 40, "Elapsed:         %5.9fs ", simulator->elapsed_ns / 1e9);
     }
 
     gui_status_wprintw(GREEN, "Simulation complete\n");

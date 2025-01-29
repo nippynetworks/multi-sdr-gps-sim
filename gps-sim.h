@@ -64,6 +64,8 @@ typedef struct {
     bool enable_tx_amp;
     bool time_overwrite;
     bool almanac_enable;
+    bool realtime_sim;
+    bool sync_start;
     int duration;
     int tx_gain;
     int ppb;
@@ -72,6 +74,7 @@ typedef struct {
     char *nav_file_name;
     char *motion_file_name;
     char *sdr_name;
+    int64_t sdr_latency_ns; // SDR transmit latency in ns
     char *pluto_uri;
     char *pluto_hostname;
     char *station_id;
@@ -81,6 +84,8 @@ typedef struct {
     location_t location; // Simulator geo location
     target_t target; // Target information
     datetime_t start; // Simulation start time
+    int64_t elapsed_ns; // Simulation elapsed time in ns
+    int64_t offset_ns; // Simulation time offset in ns
 } simulator_t;
 
 void set_thread_name(const char *name);
