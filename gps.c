@@ -1486,15 +1486,7 @@ void *gps_thread_ep(void *arg) {
 
         // We fetch data from previous hour because the actual hour is still in progress
         tm->tm_hour -= 1;
-        if (tm->tm_hour < 0) {
-            tm->tm_yday -= 1;
-            tm->tm_hour = 23;
-        }
-        if (tm->tm_yday < 0) {
-            tm->tm_year -= 1;
-            // FIXME: Check this is correct? Probably wrong on leap years?
-            tm->tm_yday = 364;
-        }
+        mktime(tm);
 
         do {
             // Compose HTTPS URL
