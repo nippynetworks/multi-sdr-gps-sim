@@ -578,7 +578,7 @@ void eph2sbf(const ephem_t eph, const ionoutc_t ionoutc, const almanac_gps_t *al
     signed long dtls, dtlsf;
     unsigned long tot, wnt, wnlsf, dn;
 
-    int sv, i;
+    int i;
     unsigned long svId;
     signed long delta_i; // Relative to i0 = 0.30 semicircles
 
@@ -696,7 +696,7 @@ void eph2sbf(const ephem_t eph, const ionoutc_t ionoutc, const almanac_gps_t *al
     }
 
     // Subframe 4, pages 2-5 and 7-10: almanac data for PRN 25 through 32
-    for (sv = 24; sv < MAX_SAT; sv++) {
+    for (int sv = 24; sv < MAX_SAT; sv++) {
         if (sv >= 24 && sv <= 27) // PRN 25-28
             i = sv - 23; // Pages 2-5 (i = 1-4)
         else if (sv >= 28 && sv < MAX_SAT) // PRN 29-32
@@ -755,7 +755,7 @@ void eph2sbf(const ephem_t eph, const ionoutc_t ionoutc, const almanac_gps_t *al
     sbf[3 + 24 * 2][9] = 0UL;
 
     // Subframe 5, page 1-24: almanac data for PRN 1 through 24
-    for (sv = 0; sv < 24; sv++) {
+    for (int sv = 0; sv < 24; sv++) {
         i = sv;
 
         if (alm->sv[sv].svid != 0) {
@@ -788,7 +788,7 @@ void eph2sbf(const ephem_t eph, const ionoutc_t ionoutc, const almanac_gps_t *al
     wna = (unsigned long) (eph.toe.week % 256);
     toa = (unsigned long) (eph.toe.sec / 4096.0);
 
-    for (sv = 0; sv < MAX_SAT; sv++) {
+    for (int sv = 0; sv < MAX_SAT; sv++) {
         if (alm->sv[sv].svid != 0) // Valid almanac is availabe
         {
             wna = (unsigned long) (alm->sv[sv].toa.week % 256);
@@ -1271,7 +1271,7 @@ static int checkSatVisibility(ephem_t eph, gpstime_t g, double *xyz, double elvM
 static int allocateChannel(channel_t *chan, almanac_gps_t *alm, ephem_t *eph, ionoutc_t ionoutc, gpstime_t grx, double *xyz, double elvMask) {
     NOTUSED(elvMask);
     int nsat = 0;
-    int i, sv;
+    int i;
     double azel[2];
 
     range_t rho;
@@ -1279,7 +1279,7 @@ static int allocateChannel(channel_t *chan, almanac_gps_t *alm, ephem_t *eph, io
     double r_ref, r_xyz;
     double phase_ini;
 
-    for (sv = 0; sv < MAX_SAT; sv++) {
+    for (int sv = 0; sv < MAX_SAT; sv++) {
         if (checkSatVisibility(eph[sv], grx, xyz, 0.0, azel) == 1) {
             nsat++; // Number of visible satellites
 
@@ -1377,43 +1377,13 @@ static int readUserMotion(double xyz[USER_MOTION_SIZE][3], const char *filename)
  */
 void *gps_thread_ep(void *arg) {
     simulator_t *simulator = (simulator_t *) (arg);
+    short *iq_buff = NULL;
 
-    ephem_t eph[EPHEM_ARRAY_SIZE][MAX_SAT];
-    channel_t chan[MAX_CHAN];
-
-    datetime_t ttmp;
-    datetime_t tmin, tmax;
-    gpstime_t gmin, gmax;
-    gpstime_t grx;
     gpstime_t g0;
-    gpstime_t gtmp;
     g0.week = -1; // Invalid start time
     date2gps(&simulator->start, &g0);
 
-    double elvmask = 0.0; // in degree
-    const double delt = 1.0 / (double) TX_SAMPLERATE;
-    double llh[3];
-    double gain[MAX_CHAN];
-    double path_loss;
-    double ant_gain;
-    double ant_pat[37];
-    double dt;
-
-    ionoutc_t ionoutc;
-    ionoutc.enable = simulator->ionosphere_enable;
-
-    bool sat_simulated[33] = {false};
-
     int start_y = 4; // Row to start output in LS_FIX window/panel
-    int ibs; // boresight angle index
-    int igrx;
-    int sv;
-    int neph = 0, ieph;
-    int i;
-    int ip, qp;
-    int iTable;
-    int isamp;
-    short *iq_buff = NULL;
 
     // Allocate user motion array
     double (*xyz)[3] = malloc(sizeof (double[USER_MOTION_SIZE][3]));
@@ -1430,6 +1400,7 @@ void *gps_thread_ep(void *arg) {
     double neu[3];
 
     // Set user location
+    double llh[3];
     llh[0] = simulator->location.lat / R2D;
     llh[1] = simulator->location.lon / R2D;
     llh[2] = simulator->location.height;
@@ -1548,6 +1519,12 @@ void *gps_thread_ep(void *arg) {
         }
     }
 
+
+    ephem_t eph[EPHEM_ARRAY_SIZE][MAX_SAT];
+    ionoutc_t ionoutc;
+    ionoutc.enable = simulator->ionosphere_enable;
+    int neph = 0, ieph;
+
     char rinex_date[21];
     int rinex_version = readRinexVersion(simulator->nav_file_name);
     if (rinex_version == 2) {
@@ -1590,7 +1567,14 @@ void *gps_thread_ep(void *arg) {
         }
     }
 
-    for (sv = 0; sv < MAX_SAT; sv++) {
+    ////////////////////////////////////////////////////////////
+    // Check start/end times of the simulation
+    ////////////////////////////////////////////////////////////
+
+    datetime_t tmin, tmax = {0};
+    gpstime_t gmin, gmax = {0};
+
+    for (int sv = 0; sv < MAX_SAT; sv++) {
         if (eph[0][sv].vflg == true) {
             gmin = eph[0][sv].toc;
             tmin = eph[0][sv].t;
@@ -1598,15 +1582,7 @@ void *gps_thread_ep(void *arg) {
         }
     }
 
-    gmax.sec = 0;
-    gmax.week = 0;
-    tmax.sec = 0;
-    tmax.mm = 0;
-    tmax.hh = 0;
-    tmax.d = 0;
-    tmax.m = 0;
-    tmax.y = 0;
-    for (sv = 0; sv < MAX_SAT; sv++) {
+    for (int sv = 0; sv < MAX_SAT; sv++) {
         if (eph[neph - 1][sv].vflg == true) {
             gmax = eph[neph - 1][sv].toc;
             tmax = eph[neph - 1][sv].t;
@@ -1618,6 +1594,7 @@ void *gps_thread_ep(void *arg) {
     {
         if (simulator->time_overwrite == true) {
             double dsec;
+            gpstime_t gtmp;
 
             gtmp.week = g0.week;
             gtmp.sec = (double) (((int) (g0.sec)) / 7200)*7200.0;
@@ -1632,8 +1609,9 @@ void *gps_thread_ep(void *arg) {
             //ionoutc.vflg = FALSE;
 
             // Overwrite the TOC and TOE to the scenario start time
-            for (sv = 0; sv < MAX_SAT; sv++) {
-                for (i = 0; i < neph; i++) {
+            datetime_t ttmp;
+            for (int sv = 0; sv < MAX_SAT; sv++) {
+                for (int i = 0; i < neph; i++) {
                     if (eph[i][sv].vflg == true) {
                         gtmp = incGpsTime(eph[i][sv].toc, dsec);
                         gps2date(&gtmp, &ttmp);
@@ -1673,10 +1651,10 @@ void *gps_thread_ep(void *arg) {
     // Select the current set of ephemerides
     ieph = -1;
 
-    for (i = 0; i < neph; i++) {
-        for (sv = 0; sv < MAX_SAT; sv++) {
+    for (int i = 0; i < neph; i++) {
+        for (int sv = 0; sv < MAX_SAT; sv++) {
             if (eph[i][sv].vflg == true) {
-                dt = subGpsTime(g0, eph[i][sv].toc);
+                double dt = subGpsTime(g0, eph[i][sv].toc);
                 if (dt >= -SECONDS_IN_HOUR && ((dt < SECONDS_IN_HOUR) || (i == (neph - 1) && dt < SECONDS_IN_HOUR * 8))) {
                     ieph = i;
                     break;
@@ -1722,12 +1700,13 @@ void *gps_thread_ep(void *arg) {
     }
 
     if (simulator->almanac_enable && alm->valid) {
-        dt = subGpsTime(alm->almanac_time, g0);
+        double dt = subGpsTime(alm->almanac_time, g0);
         if (dt < (-4.0 * SECONDS_IN_WEEK) || dt > (4.0 * SECONDS_IN_WEEK)) {
             gui_status_wprintw(RED, "Invalid time of almanac.\n");
             goto end_gps_thread;
         }
 
+        datetime_t ttmp;
         gps2date(&alm->almanac_time, &ttmp);
         gui_mvwprintw(LS_FIX, 9, 40, "Almanac date:    %4d/%02d/%02d,%02d:%02d:%02.0f",
                 ttmp.y, ttmp.m, ttmp.d, ttmp.hh, ttmp.mm, ttmp.sec);
@@ -1736,15 +1715,27 @@ void *gps_thread_ep(void *arg) {
     }
 
     ////////////////////////////////////////////////////////////
+    // Initialise simulation zero time
+    // If we are running realtime_sim or sync to PPS
+    // Then we need to adjust the simulation start a little
+    ////////////////////////////////////////////////////////////
+    gpstime_t grx;
+
+    ////////////////////////////////////////////////////////////
     // Initialize channels
     ////////////////////////////////////////////////////////////
+    double ant_pat[37];
+    double elvmask = 0.0; // in degree
+    bool sat_simulated[33] = {false};
+
+    channel_t chan[MAX_CHAN];
 
     // Clear all channels
-    for (i = 0; i < MAX_CHAN; i++)
+    for (int i = 0; i < MAX_CHAN; i++)
         chan[i].prn = 0;
 
     // Clear satellite allocation flag
-    for (sv = 0; sv < MAX_SAT; sv++)
+    for (int sv = 0; sv < MAX_SAT; sv++)
         allocatedSat[sv] = -1;
 
     // Initial reception time
@@ -1753,7 +1744,7 @@ void *gps_thread_ep(void *arg) {
     // Allocate visible satellites
     allocateChannel(chan, alm, eph[ieph], ionoutc, grx, xyz[0], elvmask);
 
-    for (i = 0; i < MAX_CHAN; i++) {
+    for (int i = 0; i < MAX_CHAN; i++) {
         if (chan[i].prn > 0) {
             gui_mvwprintw(LS_FIX, start_y++, 1, "%02d %6.1f %5.1f %11.1f %5.1f", chan[i].prn,
                     chan[i].azel[0] * R2D, chan[i].azel[1] * R2D, chan[i].rho0.d, chan[i].rho0.iono_delay);
@@ -1764,7 +1755,7 @@ void *gps_thread_ep(void *arg) {
     gui_mvwprintw(LS_FIX, 3, 40, "Nav: %02d satellites", start_y - 4);
 
     // Receiver antenna gain pattern
-    for (i = 0; i < 37; i++)
+    for (int i = 0; i < 37; i++)
         ant_pat[i] = pow(10.0, -ant_pat_db[i] / 20.0);
 
     // Update receiver time
@@ -1779,6 +1770,10 @@ void *gps_thread_ep(void *arg) {
     ////////////////////////////////////////////////////////////
     // Generate baseband signals
     ////////////////////////////////////////////////////////////
+    double gain[MAX_CHAN];
+
+    const double delt = 1.0 / (double) TX_SAMPLERATE;
+
     for (iumd = 1; iumd < numd; iumd++) {
         if (simulator->gps_thread_exit) {
             break;
@@ -1807,11 +1802,11 @@ void *gps_thread_ep(void *arg) {
             xyz[iumd][2] += tmat[0][2] * neu[0] + tmat[1][2] * neu[1] + tmat[2][2] * neu[2];
         }
 
-        for (i = 0; i < MAX_CHAN; i++) {
+        for (int i = 0; i < MAX_CHAN; i++) {
             if (chan[i].prn > 0) {
                 // Refresh code phase and data bit counters
                 range_t rho;
-                sv = chan[i].prn - 1;
+                int sv = chan[i].prn - 1;
 
                 // Current pseudorange
                 computeRange(&rho, eph[ieph][sv], &ionoutc, grx, xyz[iumd]);
@@ -1825,13 +1820,14 @@ void *gps_thread_ep(void *arg) {
                 chan[i].carr_phasestep = (int) round(512.0 * 65536.0 * chan[i].f_carr * delt);
 #endif
                 // Path loss
-                path_loss = 20200000.0 / rho.d;
+                double path_loss = 20200000.0 / rho.d;
 
+                int ibs; // boresight angle index
                 // Receiver antenna gain
                 ibs = (int) ((90.0 - rho.azel[1] * R2D) / 5.0); // covert elevation to boresight
-                ant_gain = ant_pat[ibs];
 
                 // Signal gain
+                double ant_gain = ant_pat[ibs];
                 gain[i] = (double) (path_loss * ant_gain);
                 // Pluto SDR needs more signal strength due to 12 bit DAC range.
                 // Otherwise signal dynamic range is very low.
@@ -1843,22 +1839,23 @@ void *gps_thread_ep(void *arg) {
             }
         }
 
-        for (isamp = 0; isamp < NUM_IQ_SAMPLES; isamp++) {
+        for (int isamp = 0; isamp < NUM_IQ_SAMPLES; isamp++) {
             int i_acc = 0.0f;
             int q_acc = 0.0f;
 
-            for (i = 0; i < MAX_CHAN; i++) {
+            for (int i = 0; i < MAX_CHAN; i++) {
                 if (chan[i].prn > 0) {
+                    int iTable;
 #ifdef FLOAT_CARR_PHASE
-                    // carr_phase 0.0 - 1.0          
+                    // carr_phase 0.0 - 1.0
                     iTable = (int) floor(chan[i].carr_phase * 512.0);
 #else
                     iTable = (chan[i].carr_phase >> 16) & 511; // 9-bit index
 #endif
                     // dataBit -1 or 1
                     // codeCA  -1 or 1
-                    ip = chan[i].dataBit * chan[i].codeCA * cosTable512[iTable] * gain[i];
-                    qp = chan[i].dataBit * chan[i].codeCA * sinTable512[iTable] * gain[i];
+                    int ip = chan[i].dataBit * chan[i].codeCA * cosTable512[iTable] * gain[i];
+                    int qp = chan[i].dataBit * chan[i].codeCA * sinTable512[iTable] * gain[i];
 
                     // Accumulate for all visible satellites
                     i_acc += ip;
@@ -1915,7 +1912,7 @@ void *gps_thread_ep(void *arg) {
         }
 
         // Fill transfer fifo
-        for (isamp = 0; isamp < IQ_BUFFER_SIZE; isamp++) {
+        for (int isamp = 0; isamp < IQ_BUFFER_SIZE; isamp++) {
             // validLength starts with 0 on aquire
             if (simulator->sample_size == SC16) {
                 iq->data16[iq->validLength] = iq_buff[isamp];
@@ -1946,7 +1943,7 @@ void *gps_thread_ep(void *arg) {
         //
         // Update navigation message and channel allocation every 30 seconds
         //
-        igrx = (int) (grx.sec * 10.0 + 0.5);
+        int igrx = (int) (grx.sec * 10.0 + 0.5);
 
         xyz2llh(xyz[iumd], llh);
         simulator->target.lat = llh[0] * R2D;
@@ -1957,7 +1954,7 @@ void *gps_thread_ep(void *arg) {
         if (igrx % 300 == 0) // Every 30 seconds
         {
             // Update navigation message
-            for (i = 0; i < MAX_CHAN; i++) {
+            for (int i = 0; i < MAX_CHAN; i++) {
                 if (chan[i].prn > 0) {
                     generateNavMsg(grx, &chan[i], 0);
                 }
@@ -1965,16 +1962,16 @@ void *gps_thread_ep(void *arg) {
 
             // Refresh ephemeris and subframes
             // Quick and dirty fix. Need more elegant way.
-            for (sv = 0; sv < MAX_SAT; sv++) {
+            for (int sv = 0; sv < MAX_SAT; sv++) {
                 if (eph[ieph + 1][sv].vflg == true) {
-                    dt = subGpsTime(eph[ieph + 1][sv].toc, grx);
+                    double dt = subGpsTime(eph[ieph + 1][sv].toc, grx);
                     if (dt < SECONDS_IN_HOUR) {
                         ieph++;
                         if (ieph >= EPHEM_ARRAY_SIZE) {
                             ieph = 0;
                         }
 
-                        for (i = 0; i < MAX_CHAN; i++) {
+                        for (int i = 0; i < MAX_CHAN; i++) {
                             // Generate new subframes if allocated
                             if (chan[i].prn != 0)
                                 eph2sbf(eph[ieph][chan[i].prn - 1], ionoutc, alm, chan[i].sbf);
@@ -1994,8 +1991,11 @@ void *gps_thread_ep(void *arg) {
                 gui_mvwprintw(LS_FIX, 5, 40, "xyz = %11.1f, %11.1f, %11.1f", xyz[iumd][0], xyz[iumd][1], xyz[iumd][2]);
                 gui_mvwprintw(LS_FIX, 6, 40, "llh = %11.6f, %11.6f, %11.1f", llh[0] * R2D, llh[1] * R2D, llh[2]);
                 start_y = 4;
-                for (i = 0; i < 33; i++) sat_simulated[i] = false;
-                for (i = 0; i < MAX_CHAN; i++) {
+
+                for (int i = 0; i < 33; i++)
+                    sat_simulated[i] = false;
+
+                for (int i = 0; i < MAX_CHAN; i++) {
                     if (chan[i].prn > 0) {
                         gui_mvwprintw(LS_FIX, start_y++, 1, "%02d %6.1f %5.1f %11.1f %5.1f", chan[i].prn,
                                 chan[i].azel[0] * R2D, chan[i].azel[1] * R2D, chan[i].rho0.d, chan[i].rho0.iono_delay);
