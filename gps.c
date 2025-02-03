@@ -1385,6 +1385,16 @@ void *gps_thread_ep(void *arg) {
 
     int start_y = 4; // Row to start output in LS_FIX window/panel
 
+    /* On a multi-core CPU we run the main thread and reader thread on different cores.
+     * Try sticking the main thread to core 2
+     */
+    thread_to_core(2);
+    set_thread_name("gps-thread");
+
+    ////////////////////////////////////////////////////////////
+    // User motion
+    ////////////////////////////////////////////////////////////
+
     // Allocate user motion array
     double (*xyz)[3] = malloc(sizeof (double[USER_MOTION_SIZE][3]));
     if (xyz == NULL) {
@@ -1392,8 +1402,7 @@ void *gps_thread_ep(void *arg) {
         goto end_gps_thread;
     }
 
-    // Initialize user motion array
-    // with current location/position
+    // Initialize user motion array with current location/position
     int iumd = 0;
     int numd = simulator->duration;
     double tmat[3][3];
@@ -1429,16 +1438,24 @@ void *gps_thread_ep(void *arg) {
         xyz[iumd][2] = xyz[0][2];
     }
 
+    // Read user motion file if given
+    if (simulator->motion_file_name != NULL) {
+        numd = readUserMotion(xyz, simulator->motion_file_name);
+        if (numd <= 0) {
+            gui_status_wprintw(RED, "Failed to read user motion file.\n");
+            goto end_gps_thread;
+        }
+        gui_status_wprintw(GREEN, "%u user motion points applied.\n", numd);
+        if (numd > simulator->duration) {
+            numd = simulator->duration;
+        }
+    }
+
     gui_show_location(&simulator->location);
 
-    CURLcode curl_code;
-
-    /* On a multi-core CPU we run the main thread and reader thread on different cores.
-     * Try sticking the main thread to core 2
-     */
-    thread_to_core(2);
-    set_thread_name("gps-thread");
-
+    ////////////////////////////////////////////////////////////
+    // Read ephemeris
+    ////////////////////////////////////////////////////////////
     if (simulator->nav_file_name == NULL) {
         if (simulator->online_fetch == false) {
             gui_status_wprintw(RED, "GPS ephemeris file is not specified.\n");
@@ -1448,9 +1465,7 @@ void *gps_thread_ep(void *arg) {
         }
     }
 
-    ////////////////////////////////////////////////////////////
-    // Read ephemeris
-    ////////////////////////////////////////////////////////////
+    // Maybe download latest ephemeris file
     if (simulator->online_fetch) {
         time_t t = time(NULL);
         struct tm *tm = gmtime(&t);
@@ -1488,6 +1503,7 @@ void *gps_thread_ep(void *arg) {
         tm->tm_hour -= 1;
         mktime(tm);
 
+        CURLcode curl_code;
         do {
             // Compose HTTPS URL
             snprintf(url, NAME_MAX, RINEX_HTTPS_URL RINEX_HTTPS_FILE,
@@ -1510,7 +1526,6 @@ void *gps_thread_ep(void *arg) {
             goto end_gps_thread;
         }
     }
-
 
     ephem_t eph[EPHEM_ARRAY_SIZE][MAX_SAT];
     ionoutc_t ionoutc;
@@ -1544,19 +1559,6 @@ void *gps_thread_ep(void *arg) {
             gui_mvwprintw(LS_FIX, y++, 40, "LEAP SECONDS %d", ionoutc.dtls);
         } else {
             gui_mvwprintw(LS_FIX, y++, 40, "Ionospheric data invalid or disabled!");
-        }
-    }
-
-    // Read user motion file if any
-    if (simulator->motion_file_name != NULL) {
-        numd = readUserMotion(xyz, simulator->motion_file_name);
-        if (numd <= 0) {
-            gui_status_wprintw(RED, "Failed to read user motion file.\n");
-            goto end_gps_thread;
-        }
-        gui_status_wprintw(GREEN, "%u user motion points applied.\n", numd);
-        if (numd > simulator->duration) {
-            numd = simulator->duration;
         }
     }
 
@@ -1671,6 +1673,7 @@ void *gps_thread_ep(void *arg) {
     char* almanac_file_name = "almanac.sem";
     almanac_gps_t *alm = almanac_init();
     if (simulator->almanac_enable) {
+        CURLcode curl_code;
         if (simulator->online_fetch) {
             curl_code = almanac_download(almanac_file_name);
         } else {
