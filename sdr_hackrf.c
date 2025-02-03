@@ -13,12 +13,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <fcntl.h> 
-#include <sys/stat.h> 
-#include <sys/types.h> 
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 /* for PRIX64 */
 #include <inttypes.h>
-#include <hackrf.h>
+#include <libhackrf/hackrf.h>
 #include "gui.h"
 #include "fifo.h"
 #include "sdr.h"
