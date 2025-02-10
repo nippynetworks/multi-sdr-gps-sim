@@ -211,7 +211,7 @@ static int allocatedSat[MAX_SAT];
  * x1 Minuend of subtracion
  * x2 Subtrahend of subtracion
  */
-static void subVect(double *y, const double *x1, const double *x2) {
+static inline void subVect(double *y, const double *x1, const double *x2) {
     y[0] = x1[0] - x2[0];
     y[1] = x1[1] - x2[1];
     y[2] = x1[2] - x2[2];
@@ -223,7 +223,7 @@ static void subVect(double *y, const double *x1, const double *x2) {
  * x Input vector
  * Length (Norm) of the input vector
  */
-static double normVect(const double *x) {
+static inline double normVect(const double *x) {
     return (sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]));
 }
 
@@ -232,7 +232,7 @@ static double normVect(const double *x) {
  * x2 Second multiplicand
  * Dot-product of both multiplicands
  */
-static double dotProd(const double *x1, const double *x2) {
+static inline double dotProd(const double *x1, const double *x2) {
     return (x1[0] * x2[0] + x1[1] * x2[1] + x1[2] * x2[2]);
 }
 
@@ -345,7 +345,6 @@ static void llh2xyz(const double *llh, double *xyz) {
     double clon;
     double slon;
     double d, nph;
-    double tmp;
 
     a = WGS84_RADIUS;
     e = WGS84_ECCENTRICITY;
@@ -360,7 +359,7 @@ static void llh2xyz(const double *llh, double *xyz) {
     n = a / sqrt(1.0 - d * d);
     nph = n + llh[2];
 
-    tmp = nph*clat;
+    double tmp = nph*clat;
     xyz[0] = tmp*clon;
     xyz[1] = tmp*slon;
     xyz[2] = ((1.0 - e2) * n + llh[2]) * slat;
@@ -457,7 +456,7 @@ static void satpos(ephem_t eph, gpstime_t g, double *pos, double *vel, double *c
     double xpk, ypk;
     double xpkdot, ypkdot;
 
-    double relativistic, OneMinusecosE, tmp;
+    double relativistic, OneMinusecosE;
 
     tk = g.sec - eph.toe.sec;
 
@@ -516,8 +515,7 @@ static void satpos(ephem_t eph, gpstime_t g, double *pos, double *vel, double *c
     pos[1] = xpk * sok + ypk * cik*cok;
     pos[2] = ypk*sik;
 
-    tmp = ypkdot * cik - ypk * sik*ikdot;
-
+    double tmp = ypkdot * cik - ypk * sik*ikdot;
     vel[0] = -eph.omgkdot * pos[1] + xpkdot * cok - tmp*sok;
     vel[1] = eph.omgkdot * pos[0] + xpkdot * sok + tmp*cok;
     vel[2] = ypk * cik * ikdot + ypkdot*sik;
@@ -813,21 +811,8 @@ void eph2sbf(const ephem_t eph, const ionoutc_t ionoutc, const almanac_gps_t *al
  * v long word in which bits are counted
  * Count of bits set to 1
  */
-static unsigned long countBits(unsigned long v) {
-    unsigned long c;
-    const int S[] = {1, 2, 4, 8, 16};
-    const unsigned long B[] = {
-        0x55555555, 0x33333333, 0x0F0F0F0F, 0x00FF00FF, 0x0000FFFF
-    };
-
-    c = v;
-    c = ((c >> S[0]) & B[0]) + (c & B[0]);
-    c = ((c >> S[1]) & B[1]) + (c & B[1]);
-    c = ((c >> S[2]) & B[2]) + (c & B[2]);
-    c = ((c >> S[3]) & B[3]) + (c & B[3]);
-    c = ((c >> S[4]) & B[4]) + (c & B[4]);
-
-    return (c);
+static inline unsigned long countBits(unsigned long v) {
+    return __builtin_popcountl(v);
 }
 
 static int decode_wordN(unsigned int word) {
@@ -851,7 +836,7 @@ static int decode_wordN(unsigned int word) {
 
 static bool validate_parityN(unsigned int W) {
 
-    // Parity stuff 
+    // Parity stuff
 
     static const unsigned int PARITY_25 = 0xBB1F3480;
     static const unsigned int PARITY_26 = 0x5D8F9A40;
@@ -1870,8 +1855,8 @@ void *gps_thread_ep(void *arg) {
         }
 
         for (int isamp = 0; isamp < NUM_IQ_SAMPLES; isamp++) {
-            int i_acc = 0.0f;
-            int q_acc = 0.0f;
+            int i_acc = 0;
+            int q_acc = 0;
 
             for (int i = 0; i < MAX_CHAN; i++) {
                 if (chan[i].prn > 0) {
@@ -1911,7 +1896,7 @@ void *gps_thread_ep(void *arg) {
                                 /*
                                 if (chan[i].iword>=N_DWRD)
                                         fprintf(stderr, "\nWARNING: Subframe word buffer overflow.\n");
-                                 */
+                                */
                             }
 
                             // Set new navigation data bit
@@ -1920,7 +1905,7 @@ void *gps_thread_ep(void *arg) {
                     }
 
                     // Set current code chip
-                    chan[i].codeCA = chan[i].ca[(int) chan[i].code_phase]*2 - 1;
+                    chan[i].codeCA = (chan[i].ca[(int) chan[i].code_phase] * 2) - 1;
 
                     // Update carrier phase
 #ifdef FLOAT_CARR_PHASE
