@@ -46,7 +46,7 @@ static void *pluto_tx_thread_ep(void *arg) {
     (void) arg; // Not used
 
     // Try sticking this thread to core 2
-    thread_to_core(2);
+    thread_to_core(3);
     set_thread_name("plutosdr-thread");
 
     int32_t ntx = 0;
