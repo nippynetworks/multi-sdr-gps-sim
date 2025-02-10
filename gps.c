@@ -204,8 +204,6 @@ const unsigned long sbf5_svId[25] = {
     0UL, 0UL, 0UL, 0UL, 51UL
 };
 
-static int allocatedSat[MAX_SAT];
-
 /* Subtract two vectors of double
  * y Result of subtraction
  * x1 Minuend of subtracion
@@ -1253,6 +1251,9 @@ static int checkSatVisibility(ephem_t eph, gpstime_t g, double *xyz, double elvM
     return (0); // Invisible
 }
 
+// Cache used only in allocateChannel()
+static int allocatedSatCache[MAX_SAT] = {-1};
+
 static int allocateChannel(channel_t *chan, almanac_gps_t *alm, ephem_t *eph, ionoutc_t ionoutc, gpstime_t grx, double *xyz, double elvMask) {
     NOTUSED(elvMask);
     int nsat = 0;
@@ -1268,7 +1269,7 @@ static int allocateChannel(channel_t *chan, almanac_gps_t *alm, ephem_t *eph, io
         if (checkSatVisibility(eph[sv], grx, xyz, 0.0, azel) == 1) {
             nsat++; // Number of visible satellites
 
-            if (allocatedSat[sv] == -1) // Visible but not allocated
+            if (allocatedSatCache[sv] == -1) // Visible but not allocated
             {
                 // Allocated new satellite
                 for (i = 0; i < MAX_CHAN; i++) {
@@ -1311,15 +1312,15 @@ static int allocateChannel(channel_t *chan, almanac_gps_t *alm, ephem_t *eph, io
 
                 // Set satellite allocation channel
                 if (i < MAX_CHAN)
-                    allocatedSat[sv] = i;
+                    allocatedSatCache[sv] = i;
             }
-        } else if (allocatedSat[sv] >= 0) // Not visible but allocated
+        } else if (allocatedSatCache[sv] >= 0) // Not visible but allocated
         {
             // Clear channel
-            chan[allocatedSat[sv]].prn = 0;
+            chan[allocatedSatCache[sv]].prn = 0;
 
             // Clear satellite allocation flag
-            allocatedSat[sv] = -1;
+            allocatedSatCache[sv] = -1;
         }
     }
 
@@ -1752,7 +1753,7 @@ void *gps_thread_ep(void *arg) {
 
     // Clear satellite allocation flag
     for (int sv = 0; sv < MAX_SAT; sv++)
-        allocatedSat[sv] = -1;
+        allocatedSatCache[sv] = -1;
 
     // Allocate visible satellites
     allocateChannel(chan, alm, eph[ieph], ionoutc, grx, xyz[0], elvmask);
