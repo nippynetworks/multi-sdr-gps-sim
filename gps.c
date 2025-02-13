@@ -1815,15 +1815,19 @@ void *gps_thread_ep(void *arg) {
     simulator->elapsed_ns += 1e8;
     grx = incGpsTime(g0, (double)(simulator->elapsed_ns + simulator->offset_ns) / 1e9);
 
-    // Create IQ buffer.
-    iq_buff = calloc(IQ_BUFFER_SIZE, 2);
-
     // Acquire first fifo block for transfer buffer
     struct iq_buf *iq = fifo_acquire();
 
     ////////////////////////////////////////////////////////////
     // Generate baseband signals
     ////////////////////////////////////////////////////////////
+
+    // Create IQ buffer.
+    iq_buff = aligned_alloc(8, IQ_BUFFER_SIZE * 2);
+    if (iq_buff == NULL) {
+        gui_status_wprintw(RED, "Failed to allocate IQ buffer memory.\n");
+        goto end_gps_thread;
+    }
     double gain[MAX_CHAN];
 
 
@@ -2049,7 +2053,8 @@ void *gps_thread_ep(void *arg) {
     gui_status_wprintw(GREEN, "Simulation complete\n");
 
 end_gps_thread:
-    free(iq_buff);
+    if (iq_buff)
+        free(iq_buff);
     if (xyz)
         free(xyz);
     gui_status_wprintw(RED, "Exit GPS thread\n");
