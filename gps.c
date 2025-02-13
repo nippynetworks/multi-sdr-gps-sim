@@ -204,6 +204,9 @@ const unsigned long sbf5_svId[25] = {
     0UL, 0UL, 0UL, 0UL, 51UL
 };
 
+// Duration of 1 sample tick in seconds
+const double time_delta = 1.0 / (double) TX_SAMPLERATE;
+
 /* Subtract two vectors of double
  * y Result of subtraction
  * x1 Minuend of subtracion
@@ -1327,6 +1330,41 @@ static int allocateChannel(channel_t *chan, almanac_gps_t *alm, ephem_t *eph, io
     return (nsat);
 }
 
+void update_code_phase(channel_t *chan) {
+    // Update code phase
+    chan->code_phase += chan->f_code * time_delta;
+
+    if (chan->code_phase >= CA_SEQ_LEN) {
+        chan->code_phase -= CA_SEQ_LEN;
+
+        chan->icode++;
+
+        if (chan->icode >= 20) // 20 C/A codes = 1 navigation data bit
+        {
+            chan->icode = 0;
+            chan->ibit++;
+
+            if (chan->ibit >= 30) // 30 navigation data bits = 1 word
+            {
+                chan->ibit = 0;
+                chan->iword++;
+                /*
+                if (chan->iword>=N_DWRD)
+                        fprintf(stderr, "\nWARNING: Subframe word buffer overflow.\n");
+                */
+            }
+
+            // Set new navigation data bit
+            chan->dataBit = (int) ((chan->dwrd[chan->iword]>>(29 - chan->ibit)) & 0x1UL)*2 - 1;
+        }
+    }
+
+    // Set current code chip
+    chan->codeCA = (chan->ca[(int) chan->code_phase] * 2) - 1;
+
+}
+
+
 /* Read the list of user motions from the input file
  * xyz Output array of ECEF vectors for user motion
  * filename File name of the text input file
@@ -1788,7 +1826,6 @@ void *gps_thread_ep(void *arg) {
     ////////////////////////////////////////////////////////////
     double gain[MAX_CHAN];
 
-    const double delt = 1.0 / (double) TX_SAMPLERATE;
 
     for (iumd = 1; iumd < numd; iumd++) {
         if (simulator->gps_thread_exit) {
@@ -1833,7 +1870,7 @@ void *gps_thread_ep(void *arg) {
                 // Update code phase and data bit counters
                 computeCodePhase(&chan[i], rho, 0.1);
 #ifndef FLOAT_CARR_PHASE
-                chan[i].carr_phasestep = (int) round(512.0 * 65536.0 * chan[i].f_carr * delt);
+                chan[i].carr_phasestep = (int) round(512.0 * 65536.0 * chan[i].f_carr * time_delta);
 #endif
                 // Path loss
                 double path_loss = 20200000.0 / rho.d;
@@ -1877,40 +1914,12 @@ void *gps_thread_ep(void *arg) {
                     i_acc += ip;
                     q_acc += qp;
 
-                    // Update code phase
-                    chan[i].code_phase += chan[i].f_code * delt;
-
-                    if (chan[i].code_phase >= CA_SEQ_LEN) {
-                        chan[i].code_phase -= CA_SEQ_LEN;
-
-                        chan[i].icode++;
-
-                        if (chan[i].icode >= 20) // 20 C/A codes = 1 navigation data bit
-                        {
-                            chan[i].icode = 0;
-                            chan[i].ibit++;
-
-                            if (chan[i].ibit >= 30) // 30 navigation data bits = 1 word
-                            {
-                                chan[i].ibit = 0;
-                                chan[i].iword++;
-                                /*
-                                if (chan[i].iword>=N_DWRD)
-                                        fprintf(stderr, "\nWARNING: Subframe word buffer overflow.\n");
-                                */
-                            }
-
-                            // Set new navigation data bit
-                            chan[i].dataBit = (int) ((chan[i].dwrd[chan[i].iword]>>(29 - chan[i].ibit)) & 0x1UL)*2 - 1;
-                        }
-                    }
-
-                    // Set current code chip
-                    chan[i].codeCA = (chan[i].ca[(int) chan[i].code_phase] * 2) - 1;
+                // Increment code phase
+                update_code_phase(&chan[i]);
 
                     // Update carrier phase
 #ifdef FLOAT_CARR_PHASE
-                    chan[i].carr_phase += chan[i].f_carr * delt;
+                chan[i].carr_phase += chan[i].f_carr * time_delta;
 
                     if (chan[i].carr_phase >= 1.0)
                         chan[i].carr_phase -= 1.0;
