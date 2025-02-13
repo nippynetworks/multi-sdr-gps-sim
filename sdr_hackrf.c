@@ -221,7 +221,7 @@ int sdr_hackrf_init(simulator_t *simulator) {
         return -1;
     }
 
-    if (!fifo_create(NUM_FIFO_BUFFERS, HACKRF_TRANSFER_BUFFER_SIZE, sizeof (signed char))) {
+    if (!fifo_create(NUM_FIFO_BUFFERS, IQ_BUFFER_SIZE, sizeof (signed char))) {
         gui_status_wprintw(RED, "Error creating TX fifo!");
         return -1;
     }
@@ -243,17 +243,45 @@ void sdr_hackrf_close(void) {
 }
 
 static int sdr_tx_callback(hackrf_transfer *transfer) {
-    // Get a fifo block
-    struct iq_buf *iq = fifo_dequeue();
-    if (iq != NULL && iq->data8 != NULL) {
-        // Fifo has transfer block size
-        memcpy(transfer->buffer, iq->data8, transfer->valid_length);
-        // Release and free up used block
-        fifo_release(iq);
-        return 0;
+    static struct iq_buf *current_buf = NULL;  // Persists between callbacks
+    static size_t current_offset = 0;          // Byte offset in current_buf
+
+    size_t bytes_copied = 0;
+    const size_t bytes_needed = transfer->valid_length;;
+
+    while (bytes_copied < bytes_needed) {
+        // Get new buffer if needed
+        if (!current_buf) {
+            current_buf = fifo_dequeue();
+            current_offset = 0;
+            if (!current_buf || !current_buf->data8) break;  // Underflow
+        }
+
+        // Calculate copyable bytes from current buffer
+        const size_t available = current_buf->validLength - current_offset;
+        const size_t needed = bytes_needed - bytes_copied;
+        const size_t copy_bytes = (available < needed) ? available : needed;
+
+        // Copy to transfer buffer
+        memcpy(
+            (unsigned char*)transfer->buffer + bytes_copied,
+            current_buf->data8 + current_offset,
+            copy_bytes
+        );
+
+        // Update state
+        bytes_copied += copy_bytes;
+        current_offset += copy_bytes;
+
+        // Release buffer if fully consumed
+        if (current_offset >= current_buf->validLength) {
+            fifo_release(current_buf);
+            current_buf = NULL;
+            current_offset = 0;
+        }
     }
 
-    return -1;
+    return (bytes_copied == bytes_needed) ? 0 : -1;  // 0=success, -1=underflow
 }
 
 int sdr_hackrf_run(void) {
