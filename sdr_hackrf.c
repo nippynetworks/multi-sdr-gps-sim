@@ -29,6 +29,10 @@ static hackrf_device* device;
 static const int gui_y_offset = 4;
 static const int gui_x_offset = 2;
 
+void write_tx_gain(int tx_gain) {
+    gui_mvwprintw(TRACK, 22, gui_x_offset, "TX IF gain: %idB", tx_gain);
+}
+
 int sdr_hackrf_init(simulator_t *simulator) {
     int result = HACKRF_SUCCESS;
     uint8_t board_id = BOARD_ID_INVALID;
@@ -204,7 +208,7 @@ int sdr_hackrf_init(simulator_t *simulator) {
         simulator->tx_gain = TX_IF_GAIN_MAX;
     }
 
-    gui_mvwprintw(TRACK, y++, gui_x_offset, "TX IF gain: %idB", simulator->tx_gain);
+    write_tx_gain(simulator->tx_gain);
     result = hackrf_set_txvga_gain(device, simulator->tx_gain);
     if (result != HACKRF_SUCCESS) {
         gui_status_wprintw(RED, "hackrf_set_txvga_gain() failed: %s (%d)", hackrf_error_name(result), result);
@@ -280,7 +284,9 @@ int sdr_hackrf_set_gain(const int gain) {
     int result = hackrf_set_txvga_gain(device, g);
     if (result != HACKRF_SUCCESS) {
         gui_status_wprintw(RED, "hackrf_set_txvga_gain() failed: %s (%d)", hackrf_error_name(result), result);
-    }
+     } else {
+        write_tx_gain(g);
+     }
 
     return g;
 }

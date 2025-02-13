@@ -460,11 +460,9 @@ inc_dec_offset:
                 // amplifier gain key input
                 case GAIN_INC_KEY:
                     simulator.tx_gain = sdr_set_gain(simulator.tx_gain + 1);
-                    gui_status_wprintw(GREEN, "Gain: %ddB.\r", simulator.tx_gain);
                     break;
                 case GAIN_DEC_KEY:
                     simulator.tx_gain = sdr_set_gain(simulator.tx_gain - 1);
-                    gui_status_wprintw(GREEN, "Gain: %ddB.\r", simulator.tx_gain);
                     break;
                 default:
                     if (is_info_shown) {
