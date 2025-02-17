@@ -29,6 +29,11 @@ static const int help_height = 13;
 static int max_x = 0;
 static int max_y = 0;
 
+#define MAX_BUFFERED 100  // Adjust based on expected error count
+
+static char *msg_log[MAX_BUFFERED];
+static int msg_count = 0;
+
 static WINDOW *window[13] = {NULL};
 static PANEL *panel[13] = {NULL};
 
@@ -369,6 +374,12 @@ void gui_destroy(void) {
     delwin(window[STATUS]);
     delwin(window[HELP]);
     endwin();
+
+    // Write buffered messages
+    for (int i = 0; i < msg_count; i++) {
+        fprintf(stdout, "%s", msg_log[i]);
+        free(msg_log[i]);
+    }
 }
 
 void gui_mvwprintw(window_panel_t w, int y, int x, const char * fmt, ...) {
@@ -399,6 +410,25 @@ void gui_status_wprintw(status_color_t clr, const char * fmt, ...) {
     }
     va_end(args);
     wrefresh(window[STATUS]);
+
+    // Also store messages to later write to stdout after we terminate
+    if (msg_count < MAX_BUFFERED) {
+        va_start(args, fmt);
+        // Determine required buffer size
+        int size = vsnprintf(NULL, 0, fmt, args) + 1;
+        va_end(args);
+
+        // Allocate and format the message
+        char *msg = malloc(size);
+        if (msg) {
+            va_start(args, fmt);
+            vsnprintf(msg, size, fmt, args);
+            va_end(args);
+        }
+
+        msg_log[msg_count++] = msg;
+    }
+
     pthread_mutex_unlock(&gui_lock);
 }
 
