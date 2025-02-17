@@ -19,6 +19,17 @@
 #include <errno.h>
 #include <curl/curl.h>
 #include <zlib.h>
+#ifdef OPENMP
+#include <omp.h>
+#endif
+#if defined(__AVX2__) || defined(__SSE2__)
+    #include <immintrin.h>
+#endif
+
+#if defined(__ARM_NEON)
+    #include <arm_neon.h>
+#endif
+
 #include "download.h"
 #include "sdr.h"
 #include "gui.h"
@@ -1396,6 +1407,45 @@ static int readUserMotion(double xyz[USER_MOTION_SIZE][3], const char *filename)
     return (numd);
 }
 
+/* Given an array of 2 byte short ints,
+ * extract only the lowest order byte into new array
+*/
+void extract_low_bytes(int16_t *iq_buff, int8_t *data8, size_t sample_count) {
+    // AVX2 Optimization (x86)
+    #if defined(__AVX2__)
+    for (size_t i = 0; i + 16 <= sample_count; i += 16) {
+        __m256i v = _mm256_load_si256((__m256i*)&iq_buff[i]); // Load 16x int16_t
+        __m256i v_packed = _mm256_shuffle_epi8(v, _mm256_setr_epi8(
+            0, -1, 2, -1, 4, -1, 6, -1, 8, -1, 10, -1, 12, -1, 14, -1,
+            16, -1, 18, -1, 20, -1, 22, -1, 24, -1, 26, -1, 28, -1, 30, -1
+        )); // Extract low bytes
+        _mm_storeu_si128((__m128i*)&data8[i], _mm256_castsi256_si128(v_packed));
+    }
+    #elif defined(__SSE2__)
+    for (size_t i = 0; i + 8 <= sample_count; i += 8) {
+        __m128i v = _mm_load_si128((__m128i*)&iq_buff[i]); // Load 8x int16_t
+        __m128i v_packed = _mm_shuffle_epi8(v, _mm_setr_epi8(
+            0, -1, 2, -1, 4, -1, 6, -1, 8, -1, 10, -1, 12, -1, 14, -1
+        )); // Extract low bytes
+        _mm_storel_epi64((__m128i*)&data8[i], v_packed);
+    }
+    // NEON Optimization (ARM)
+    #elif defined(__ARM_NEON)
+    for (size_t i = 0; i + 8 <= sample_count; i += 8) {
+        int16x8_t v = vld1q_s16(&iq_buff[i]); // Load 8x int16_t
+        int8x8_t v_packed = vmovn_s16(v); // Extract low bytes
+        vst1_s8(&data8[i], v_packed); // Store into output array
+    }
+    // Scalar Fallback for Remaining Elements
+    #else
+        #pragma omp simd aligned(iq_buff:32)
+        #pragma GCC unroll 4
+        for (size_t i = 0; i < sample_count; i++) {
+            data8[i] = (int8_t)(iq_buff[i] & 0xFF);
+        }
+    #endif
+}
+
 /*
  *
  */
@@ -1886,6 +1936,10 @@ void *gps_thread_ep(void *arg) {
                 // Signal gain
                 double ant_gain = ant_pat[ibs];
                 gain[i] = (double) (path_loss * ant_gain);
+
+                if (simulator->sample_size == SC08) {
+                    gain[i] /= 16.0; // 8 bit samples
+                }
                 // Pluto SDR needs more signal strength due to 12 bit DAC range.
                 // Otherwise signal dynamic range is very low.
                 if (simulator->sdr_type == SDR_PLUTOSDR) {
@@ -1941,33 +1995,27 @@ void *gps_thread_ep(void *arg) {
         }
 
         // Fill transfer fifo
-        for (int isamp = 0; isamp < IQ_BUFFER_SIZE; isamp++) {
-            // validLength starts with 0 on aquire
-            if (simulator->sample_size == SC16) {
+        if (simulator->sample_size == SC16) {
+            for (int isamp = 0; isamp < IQ_BUFFER_SIZE; isamp++) {
                 iq->data16[iq->validLength] = iq_buff[isamp];
-            } else {
-                iq->data8[iq->validLength] = iq_buff[isamp] >> 4;
+                iq->validLength += 1;
             }
-            iq->validLength += 1;
-            if (simulator->sdr_type == SDR_HACKRF) {
-                // Fill one fifo block until full
-                if (iq->validLength == HACKRF_TRANSFER_BUFFER_SIZE) {
-                    // Enqueue full fifo block
-                    fifo_enqueue(iq);
-                    // Get a new one and fill as long as we don't reach IQ_BUFFER_SIZE
-                    iq = fifo_acquire();
-                }
-                // We don't enque a partly filled fifo block but keep it for the next round
+        } else {
+            extract_low_bytes(iq_buff, iq->data8, IQ_BUFFER_SIZE);
+            // write number of bytes written
+            iq->validLength = IQ_BUFFER_SIZE;
+
+#ifdef DEBUG
+            for (int isamp = 0; isamp < IQ_BUFFER_SIZE; isamp++) {
+                assert(iq_buff[isamp] >= -128 && iq_buff[isamp] <= 127);
             }
+#endif
         }
 
-        // File writer and Pluto SDR taking the entire IQ buffer at once.
-        if (simulator->sdr_type == SDR_IQFILE || simulator->sdr_type == SDR_PLUTOSDR) {
-            // Enqueue full fifo block
-            fifo_enqueue(iq);
-            // Get a new one
-            iq = fifo_acquire();
-        }
+        // Enqueue full fifo block
+        fifo_enqueue(iq);
+        // Get a new one
+        iq = fifo_acquire();
 
         //
         // Update navigation message and channel allocation every 30 seconds
