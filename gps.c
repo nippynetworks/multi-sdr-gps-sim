@@ -2083,6 +2083,7 @@ end_gps_thread:
         free(xyz);
     gui_status_wprintw(RED, "Exit GPS thread\n");
     simulator->gps_thread_exit = true;
+    simulator->main_exit = true;
     pthread_cond_signal(&(simulator->gps_init_done));
     pthread_exit(NULL);
 }
