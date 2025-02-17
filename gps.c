@@ -218,6 +218,30 @@ const unsigned long sbf5_svId[25] = {
 // Duration of 1 sample tick in seconds
 const double time_delta = 1.0 / (double) TX_SAMPLERATE;
 
+// sin/cos lookup tables
+float sinTable512f[512] __attribute__((aligned(32)));
+float cosTable512f[512] __attribute__((aligned(32)));
+
+/* Initialise sin/cos lookup tables*/
+void initSinCosTables(void) {
+    for (int i=0; i<512; i++) {
+        int sinv, cosv;
+#if 0 // reproduce previous tables
+        sinv = round(sin((i+0.5)/512.0*2*PI)*250);
+        cosv = round(cos((i+0.5)/512.0*2*PI)*250);
+        if (abs(sinv) == 106) sinv = sinv / 106 * 105;
+        if (abs(cosv) == 106) cosv = cosv / 106 * 105;
+#else
+        sinv = sin((i+0.5)/512.0*2*PI)*250;
+        cosv = cos((i+0.5)/512.0*2*PI)*250;
+#endif
+        sinTable512f[i] = sinv;
+        cosTable512f[i] = cosv;
+    }
+
+    return;
+}
+
 /* Subtract two vectors of double
  * y Result of subtraction
  * x1 Minuend of subtracion
@@ -1488,6 +1512,8 @@ void *gps_thread_ep(void *arg) {
      */
     thread_to_core(2);
     set_thread_name("gps-thread");
+
+    initSinCosTables();
 
     ////////////////////////////////////////////////////////////
     // User motion
