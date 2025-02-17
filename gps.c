@@ -1811,7 +1811,6 @@ void *gps_thread_ep(void *arg) {
     ////////////////////////////////////////////////////////////
     double ant_pat[37];
     double elvmask = 0.0; // in degree
-    bool sat_simulated[33] = {false};
 
     channel_t chan[MAX_CHAN];
     int allocated_channel_cnt = 0;
@@ -1828,14 +1827,11 @@ void *gps_thread_ep(void *arg) {
     // Allocate visible satellites
     allocated_channel_cnt = allocateChannel(chan, alm, eph[ieph], ionoutc, grx, xyz[0], elvmask);
 
-
     for (int i = 0; i < MAX_CHAN; i++) {
         if (chan[i].prn > 0) {
             gui_mvwprintw(LS_FIX, start_y++, 1, "%02d %6.1f %5.1f %11.1f %5.1f", chan[i].prn,
                     chan[i].azel[0] * R2D, chan[i].azel[1] * R2D, chan[i].rho0.d, chan[i].rho0.iono_delay);
         }
-
-        sat_simulated[chan[i].prn] = true;
     }
     gui_mvwprintw(LS_FIX, 3, 40, "Nav: %02d satellites", start_y - 4);
 
@@ -2054,16 +2050,11 @@ void *gps_thread_ep(void *arg) {
                 gui_mvwprintw(LS_FIX, 6, 40, "llh = %11.6f, %11.6f, %11.1f", llh[0] * R2D, llh[1] * R2D, llh[2]);
                 start_y = 4;
 
-                for (int i = 0; i < 33; i++)
-                    sat_simulated[i] = false;
-
                 for (int i = 0; i < MAX_CHAN; i++) {
                     if (chan[i].prn > 0) {
                         gui_mvwprintw(LS_FIX, start_y++, 1, "%02d %6.1f %5.1f %11.1f %5.1f", chan[i].prn,
                                 chan[i].azel[0] * R2D, chan[i].azel[1] * R2D, chan[i].rho0.d, chan[i].rho0.iono_delay);
                     }
-
-                    sat_simulated[chan[i].prn] = true;
                 }
 
                 gui_mvwprintw(LS_FIX, 3, 40, "Nav: %02d satellites", start_y - 4);
