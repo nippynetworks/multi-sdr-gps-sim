@@ -1281,7 +1281,6 @@ static int allocateChannel(channel_t *chan, almanac_gps_t *alm, ephem_t *eph, io
 
     for (int sv = 0; sv < MAX_SAT; sv++) {
         if (checkSatVisibility(eph[sv], grx, xyz, 0.0, azel) == 1) {
-            nsat++; // Number of visible satellites
 
             if (allocatedSatCache[sv] == -1) // Visible but not allocated
             {
@@ -1325,17 +1324,42 @@ static int allocateChannel(channel_t *chan, almanac_gps_t *alm, ephem_t *eph, io
                 }
 
                 // Set satellite allocation channel
-                if (i < MAX_CHAN)
+                if (i < MAX_CHAN) {
                     allocatedSatCache[sv] = i;
+                }
             }
-        } else if (allocatedSatCache[sv] >= 0) // Not visible but allocated
-        {
-            // Clear channel
-            chan[allocatedSatCache[sv]].prn = 0;
+        } else if (allocatedSatCache[sv] >= 0) {
+            // Not visible but allocated
+
+            int chan_index = allocatedSatCache[sv];
+
+            // Shift subsequent channels down by one to overwrite the current entry
+            for (int j = chan_index; j < MAX_CHAN - 1; j++) {
+                memcpy(&chan[j], &chan[j + 1], sizeof(channel_t));
+            }
+
+            // Clear the last channel to avoid duplicates
+            memset(&chan[MAX_CHAN - 1], 0, sizeof(channel_t));
+
+            // Update allocatedSatCache for all satellites that were in higher channels
+            for (int s = 0; s < MAX_SAT; s++) {
+                if (allocatedSatCache[s] > chan_index) {
+                    allocatedSatCache[s]--;
+                }
+            }
+
+
+            // // Clear channel
+            // chan[allocatedSatCache[sv]].prn = 0;
 
             // Clear satellite allocation flag
             allocatedSatCache[sv] = -1;
         }
+    }
+
+    // Number of visible & allocated satellites
+    for (nsat = 0; nsat < MAX_CHAN; nsat++) {
+        if (chan[nsat].prn == 0) break;
     }
 
     return (nsat);
@@ -1834,8 +1858,10 @@ void *gps_thread_ep(void *arg) {
     bool sat_simulated[33] = {false};
 
     channel_t chan[MAX_CHAN];
+    int allocated_channel_cnt = 0;
 
     // Clear all channels
+    memset(chan, 0, sizeof(chan));
     for (int i = 0; i < MAX_CHAN; i++)
         chan[i].prn = 0;
 
@@ -1844,7 +1870,8 @@ void *gps_thread_ep(void *arg) {
         allocatedSatCache[sv] = -1;
 
     // Allocate visible satellites
-    allocateChannel(chan, alm, eph[ieph], ionoutc, grx, xyz[0], elvmask);
+    allocated_channel_cnt = allocateChannel(chan, alm, eph[ieph], ionoutc, grx, xyz[0], elvmask);
+
 
     for (int i = 0; i < MAX_CHAN; i++) {
         if (chan[i].prn > 0) {
@@ -2059,7 +2086,7 @@ void *gps_thread_ep(void *arg) {
             }
 
             // Update channel allocation
-            allocateChannel(chan, alm, eph[ieph], ionoutc, grx, xyz[0], elvmask);
+            allocated_channel_cnt = allocateChannel(chan, alm, eph[ieph], ionoutc, grx, xyz[0], elvmask);
 
             if (simulator->show_verbose) {
                 gps2date(&grx, &simulator->start);
