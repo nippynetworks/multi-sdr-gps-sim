@@ -295,7 +295,7 @@ int main(int argc, char** argv) {
     /* On a multi-core CPU we run the main thread and reader thread on different cores.
      * Try sticking the main thread to core 1
      */
-    thread_to_core(1);
+    // thread_to_core(1);
     set_thread_name("simulator-thread");
 
     // Parse the command line options

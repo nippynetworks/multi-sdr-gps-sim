@@ -1440,7 +1440,7 @@ void *gps_thread_ep(void *arg) {
     /* On a multi-core CPU we run the main thread and reader thread on different cores.
      * Try sticking the main thread to core 2
      */
-    thread_to_core(2);
+    // thread_to_core(2);
     set_thread_name("gps-thread");
 
     initSinCosTables();
