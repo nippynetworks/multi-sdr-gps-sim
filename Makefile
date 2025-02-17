@@ -1,6 +1,7 @@
 HACKRFSDR ?= no
 PLUTOSDR ?= no
 DEBUG ?= no
+OPENMP ?= no
 # Detect the operating system
 UNAME_S := $(shell uname -s)
 
@@ -11,13 +12,33 @@ LDFLAGS =
 SDR_OBJ = sdr_iqfile.o
 
 ifeq ($(DEBUG), yes)
-    CFLAGS += -Og -g
+    CFLAGS += -O0 -g
+else
+    CFLAGS += -O3 -ftree-vectorize -funroll-loops
+    CFLAGS += -march=native
+    #CFLAGS += -fopt-info-vec-missed -fopt-info-vec
+    # CFLAGS += -Rpass=vectorize -Rpass-analysis=vectorize
+
+    # Fast math
+    CFLAGS +=-ffast-math
+    LDFLAGS += -ffast-math
+endif
+
+ifeq ($(OPENMP), yes)
+    # Parallelization
+    ifeq ($(UNAME_S),Darwin)
+        CFLAGS += -DOPENMP -I/opt/homebrew/opt/libomp/include -Xpreprocessor -fopenmp
+        LDFLAGS += -L/opt/homebrew/opt/libomp/lib -lomp
+    else
+        CFLAGS += -DOPENMP -fopenmp
+        LDFLAGS += -fopenmp
+    endif
 endif
 
 # Compilation on Mac OS
 ifeq ($(UNAME_S),Darwin)
     LIBS += -largp
-    LDFLAGS = -L/opt/homebrew/lib
+    LDFLAGS += -L/opt/homebrew/lib
     CFLAGS += -I/opt/homebrew/include
 endif
 
