@@ -14,7 +14,7 @@ SDR_OBJ = sdr_iqfile.o
 ifeq ($(DEBUG), yes)
     CFLAGS += -O0 -g
 else
-    CFLAGS += -O3 -ftree-vectorize -funroll-loops
+    CFLAGS += -O3 -ftree-vectorize -funroll-loops -flto=auto
     CFLAGS += -march=native
     #CFLAGS += -fopt-info-vec-missed -fopt-info-vec
     # CFLAGS += -Rpass=vectorize -Rpass-analysis=vectorize
