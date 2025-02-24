@@ -2066,12 +2066,15 @@ void *gps_thread_ep(void *arg) {
         grx = incGpsTime(g0, (double)(simulator->elapsed_ns + simulator->offset_ns) / 1e9);
 
         // Update time counter
-        if (simulator->show_verbose && (igrx % 10 == 0)) {
-            gps2date(&grx, &simulator->start);
-            gui_mvwprintw(LS_FIX, 11, 57, "%4d/%02d/%02d,%02d:%02d:%02.9f (%d:%.0f)",
-                          simulator->start.y, simulator->start.m, simulator->start.d, simulator->start.hh, simulator->start.mm, simulator->start.sec, grx.week, grx.sec);
+        if (iumd % 10 == 0) {
+            gui_mvwprintw(LS_FIX, 12, 40, "Elapsed:         %5.9fs ", simulator->elapsed_ns / 1e9);
+
+            if (simulator->show_verbose) {
+                gps2date(&grx, &simulator->start);
+                gui_mvwprintw(LS_FIX, 11, 57, "%4d/%02d/%02d,%02d:%02d:%02.9f (%d:%.0f)",
+                            simulator->start.y, simulator->start.m, simulator->start.d, simulator->start.hh, simulator->start.mm, simulator->start.sec, grx.week, grx.sec);
+            }
         }
-        gui_mvwprintw(LS_FIX, 12, 40, "Elapsed:         %5.9fs ", simulator->elapsed_ns / 1e9);
     }
 
     gui_status_wprintw(GREEN, "Simulation complete\n");
