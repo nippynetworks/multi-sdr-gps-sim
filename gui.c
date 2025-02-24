@@ -276,7 +276,7 @@ static void init_windows(void) {
     mvwprintw(window[HELP], 8, 2, "t   Increase TX gain      arrow keys move NSEW");
     mvwprintw(window[HELP], 9, 2, "g   Decrease TX gain      shift adjust faster");
     mvwprintw(window[HELP], 9, 2, "p   Increase sim offset");
-    mvwprintw(window[HELP], 9, 2, "o   Decrease sim offset");
+    mvwprintw(window[HELP], 9, 3, "o   Decrease sim offset");
 
     /* Attach a panel to each window
      * Order is bottom up
