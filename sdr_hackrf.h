@@ -22,7 +22,7 @@
 #define BASEBAND_FILTER_BW_MAX (28000000) /* 28 MHz max value */
 
 // Magic number which should sync the output signal with real GPS time
-#define HACKRF_LATENCY 305823600LL;
+#define HACKRF_LATENCY 519987000LL;
 
 int sdr_hackrf_init(simulator_t *simulator);
 void sdr_hackrf_close(void);
